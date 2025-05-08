@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: da916d2ccc088d9429f0911d0d90b156
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 140057
+  packageName: Infinity Dungeon Generator
+  packageVersion: 1.0
+  assetPath: Assets/InfinityDungeonGenerator/Scripts/DungeonGenerator.cs
+  uploadId: 296156

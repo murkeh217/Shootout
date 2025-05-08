@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 8f631543d60e2564397a4b345bf200da
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 140057
+  packageName: Infinity Dungeon Generator
+  packageVersion: 1.0
+  assetPath: Assets/InfinityDungeonGenerator/Scripts/Tunnel.cs
+  uploadId: 296156

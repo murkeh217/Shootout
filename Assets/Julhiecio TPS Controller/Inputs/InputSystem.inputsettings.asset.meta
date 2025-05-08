@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 2ec44aec0dd0a564fa6de8ea4b3c5852
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 251334
+  packageName: JU TPS 3 - Third Person Shooter GameKit + Vehicle Physics
+  packageVersion: 3.0.52
+  assetPath: Assets/Julhiecio TPS Controller/Inputs/InputSystem.inputsettings.asset
+  uploadId: 655262
