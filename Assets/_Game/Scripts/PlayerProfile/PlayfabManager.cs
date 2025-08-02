@@ -1,33 +1,62 @@
+using EasyButtons;
 using PlayFab;
 using PlayFab.ClientModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayfabManager : MonoBehaviour
 {
-    public static PlayfabManager PFC;
+    public static PlayfabManager Instance;
 
-    [SerializeField] private string userEmail;
-    [SerializeField] private string userPassword;
-    [SerializeField] private string userName;
+    [SerializeField] private bool logInAtStart;
     [Space]
-    public GameObject LoginPanel;
-    public GameObject AddLoginPanel;
-    public GameObject RecoverButton;
+    [SerializeField] private string email;
+    [SerializeField] private string password;
+    [SerializeField] private string username;
     [Space]
-    public int playerKills;
-    public int playerWinsAsMarine;
-    public int playerWinsAsAlien;
-    [Space]
-    public string skinsString = "";
-    [Space]
-    public bool isClientLoggedIn;
-    public bool isClientLoggedInB;
-    public bool isLoggedIn;
-    public bool isEntityLoggedIn;
-    public bool isInternetOn;
+    [SerializeField] private GameObject loginPanel;
+    [SerializeField] private GameObject AddMainPasswordPanel;
+
+    [Header("Statistics")]
+    [SerializeField] private int playerKills;
+    [SerializeField] private int playerWinsAsMarine;
+    [SerializeField] private int playerWinsAsAlien;
+
+    [Header("PlayerData")]
+    [SerializeField] private string receivedSkinsString = "";
+    [SerializeField] private string skinsStringToSet = "";
+
+    [Header("Debug")]
+    [SerializeField] private bool isClientLoggedIn;
+    [SerializeField] private bool isClientLoggedInB;
+    [SerializeField] private bool isLoggedIn;
+    [SerializeField] private bool isEntityLoggedIn;
+    [SerializeField] private bool isInternetOn;
+    [SerializeField] private string playfabId;
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(this.gameObject);
+            return;
+        }
+
+        this.transform.SetParent(null);
+        DontDestroyOnLoad(this.gameObject);
+
+        if (string.IsNullOrEmpty(PlayFabSettings.TitleId))
+        {
+            PlayFabSettings.TitleId = "154DB9";
+        }
+    }
 
     private void Update()
     {
@@ -37,38 +66,14 @@ public class PlayfabManager : MonoBehaviour
         isEntityLoggedIn = PlayFabSettings.staticPlayer.IsEntityLoggedIn();
         isClientLoggedInB = PlayFabSettings.staticPlayer.IsClientLoggedIn();
         isInternetOn = Application.internetReachability != NetworkReachability.NotReachable;
+        playfabId = PlayFabSettings.staticPlayer != null ? PlayFabSettings.staticPlayer.PlayFabId : "[staticPlayer null]";
 #endif
     }
 
-    private void OnEnable()
+    [Button]
+    private void LogIn()
     {
-        if (PlayfabManager.PFC == null)
-        {
-            PlayfabManager.PFC = this;
-        }
-        else
-        {
-            if (PlayfabManager.PFC != this)
-            {
-                Destroy(this.gameObject);
-            }
-        }
-        this.transform.SetParent(null);
-        DontDestroyOnLoad(this.gameObject);
-    }
-
-    public void Start2() // playfab manager disabled not to spam console
-    {
-        //Note: Setting title Id here can be skipped if you have set the value in Editor Extensions already.
-        if (string.IsNullOrEmpty(PlayFabSettings.TitleId))
-        {
-            PlayFabSettings.TitleId = "148F45"; // Please change this value to your own titleId from PlayFab Game Manager
-        }
-
-        string id = ReturnMobileID();
-        Debug.Log("login device id: " + id);
-
-
+#if UNITY_STANDALONE
         if (PlayerPrefs.HasKey("EMAIL"))
         {
             userEmail = PlayerPrefs.GetString("EMAIL");
@@ -79,102 +84,91 @@ public class PlayfabManager : MonoBehaviour
         }
         else
         {
+            Debug.Log("LogIn() no email set");
+        }
+#endif
 #if UNITY_ANDROID
-            Debug.Log("logging to Playfab with id " + id + "...");
-            var requestAndroid = new LoginWithAndroidDeviceIDRequest { AndroidDeviceId = id, CreateAccount = true };
-            PlayFabClientAPI.LoginWithAndroidDeviceID(requestAndroid, OnLoginMobileSuccess, OnLoginMobileFailure);
+        string id = GetMobileId();
+        Debug.Log("logging to Playfab with id " + id + "...");
+        var requestAndroid = new LoginWithAndroidDeviceIDRequest { AndroidDeviceId = id, CreateAccount = true };
+        PlayFabClientAPI.LoginWithAndroidDeviceID(requestAndroid, 
+            result =>
+            {
+                Debug.Log($"Login Success, result.PlayFabId {result.PlayFabId}");
+
+                if(loginPanel != null)
+                    loginPanel.SetActive(false);
+
+                GetStats();
+                GetPlayerData();
+                SetPlayerID();
+            },
+            error => { Debug.LogError(error.GenerateErrorReport()); }
+        );
 #endif
 #if UNITY_IOS
-            var requestIOS = new LoginWithIOSDeviceIDRequest { DeviceId = ReturnMobileID(), CreateAccount = true };
-            PlayFabClientAPI.LoginWithIOSDeviceID(requestIOS, OnLoginMobileSuccess, OnLoginMobileFailure);
+        var requestIOS = new LoginWithIOSDeviceIDRequest { DeviceId = ReturnMobileID(), CreateAccount = true };
+        PlayFabClientAPI.LoginWithIOSDeviceID(requestIOS, OnLoginMobileSuccess, OnLoginMobileFailure);
 #endif
-        }
     }
 
     private void OnEmailLoginSuccess(LoginResult result)
     {
         Debug.Log("mail Login Success");
-        PlayerPrefs.SetString("EMAIL", userEmail);
-        PlayerPrefs.SetString("PASSWORD", userPassword);
-        if(LoginPanel != null)
-            LoginPanel.SetActive(false);
-        if (RecoverButton != null)
-            RecoverButton.SetActive(false);
+        PlayerPrefs.SetString("EMAIL", email);
+        PlayerPrefs.SetString("PASSWORD", password);
+
+        if(loginPanel != null)
+            loginPanel.SetActive(false);
+
         GetStats();
         GetPlayerData();
-        //CrashlyticsManager.OnPlayfabIdSet(result.PlayFabId);
+        SetPlayerID();
+    }
+
+    private void SetPlayerID()
+    {
+        Debug.Log("SetPlayerID() " + PlayFabSettings.staticPlayer.PlayFabId);
+        //CrashlyticsManager.OnPlayfabIdSet(PlayFabSettings.staticPlayer.PlayFabId);
     }
 
     private void OnEmailLoginFailure(PlayFabError error)
     {
-        var registerRequest = new RegisterPlayFabUserRequest { Email = userEmail, Password = userPassword, Username = userName };
-        PlayFabClientAPI.RegisterPlayFabUser(registerRequest, OnRegisterSuccess, OnRegisterFailure);//couldn't log in, register
-    }
+        var registerRequest = new RegisterPlayFabUserRequest { 
+            Email = email, 
+            Password = password, 
+            Username = username 
+        };
 
-    private void OnLoginMobileSuccess(LoginResult result)
-    {
-        Debug.Log("Login Success, you made your first successful API call!");
-        LoginPanel?.SetActive(false);
-        GetStats();
-        GetPlayerData();
-        //CrashlyticsManager.OnPlayfabIdSet(result.PlayFabId);
-    }
-
-    private void OnLoginMobileFailure(PlayFabError error)
-    {
-        Debug.LogError(error.GenerateErrorReport());
-    }
-
-    private void OnRegisterSuccess(RegisterPlayFabUserResult result)
-    {
-        Debug.Log("Register Success, you made your first successful API call!");
-        PlayerPrefs.SetString("EMAIL", userEmail);
-        PlayerPrefs.SetString("PASSWORD", userPassword);
-
-        PlayFabClientAPI.UpdateUserTitleDisplayName(new UpdateUserTitleDisplayNameRequest
-        {
-            DisplayName = userName
-        },
+        //couldn't log in, register
+        PlayFabClientAPI.RegisterPlayFabUser(registerRequest,
             result =>
             {
-                Debug.Log("Display name updated successfully: " + result.DisplayName);
+                Debug.Log("Register Success!");
+                PlayerPrefs.SetString("EMAIL", email);
+                PlayerPrefs.SetString("PASSWORD", password);
+
+                PlayFabClientAPI.UpdateUserTitleDisplayName(new UpdateUserTitleDisplayNameRequest
+                {
+                    DisplayName = username
+                },
+                    result =>
+                    {
+                        Debug.Log("Display name updated successfully: " + result.DisplayName);
+                    },
+                    error =>
+                    {
+                        Debug.LogError("Error updating display name: " + error.GenerateErrorReport());
+                    });
+                GetStats();
+                GetPlayerData(); // probably not needed here because just-registered player doesn't get any skins
+                loginPanel?.SetActive(false);
             },
-            error =>
-            {
-                Debug.LogError("Error updating display name: " + error.GenerateErrorReport());
-            });
-        GetStats();
-        GetPlayerData(); // probably not needed here because just-registered player doesn't get any skins
-        LoginPanel?.SetActive(false);
+            error => { Debug.LogError(error.GenerateErrorReport()); }
+            );
     }
 
-    private void OnRegisterFailure(PlayFabError error)
-    {
-        Debug.LogError(error.GenerateErrorReport());
-    }
-
-    public void GetUserEmail(string emailIn)
-    {
-        userEmail = emailIn;
-    }
-
-    public void GetUserPassword(string passwordIn)
-    {
-        userPassword = passwordIn;
-    }
-
-    public void GetUserName(string userNameIn)
-    {
-        userName = userNameIn;
-    }
-
-    public void OnClickLogIn()
-    {
-        var request = new LoginWithEmailAddressRequest { Email = userEmail, Password = userPassword };
-        PlayFabClientAPI.LoginWithEmailAddress(request, OnEmailLoginSuccess, OnEmailLoginFailure);
-    }
-
-    public static string ReturnMobileID()
+    private string GetMobileId()
     {
         string deviceId = SystemInfo.deviceUniqueIdentifier;
         if (string.IsNullOrEmpty(deviceId))
@@ -189,24 +183,26 @@ public class PlayfabManager : MonoBehaviour
         return deviceId;
     }
 
-    public void OpenAddLogin()
+    public void OnCLogInClicked()
     {
-        AddLoginPanel.SetActive(true);
+        var request = new LoginWithEmailAddressRequest { Email = email, Password = password };
+        PlayFabClientAPI.LoginWithEmailAddress(request, OnEmailLoginSuccess, OnEmailLoginFailure);
     }
 
-    public void OnClickAddLogin()
+    //we have already created account with device id, but user clicked add mail and password to his account
+    public void OnAddEmailPasswordClicked()
     {
-        //we have account created through device id, but user clicked add mail and password to his account
-        var addLoginRequest = new AddUsernamePasswordRequest { Email = userEmail, Password = userPassword, Username = userName };
-        PlayFabClientAPI.AddUsernamePassword(addLoginRequest, OnAddLoginSuccess, OnRegisterFailure);
-    }
-
-    private void OnAddLoginSuccess(AddUsernamePasswordResult result)
-    {
-        Debug.Log("Add Login Success, you made your first successful API call!");
-        PlayerPrefs.SetString("EMAIL", userEmail);
-        PlayerPrefs.SetString("PASSWORD", userPassword);
-        AddLoginPanel.SetActive(false);
+        var addLoginRequest = new AddUsernamePasswordRequest { Email = email, Password = password, Username = username };
+        PlayFabClientAPI.AddUsernamePassword(addLoginRequest,
+            result =>
+            {
+                Debug.Log("OnClickAddLogin() Success");
+                PlayerPrefs.SetString("EMAIL", email);
+                PlayerPrefs.SetString("PASSWORD", password);
+                AddMainPasswordPanel.SetActive(false);
+            },
+            error => { Debug.LogError(error.GenerateErrorReport()); }
+            );
     }
 
     /// <summary>
@@ -214,7 +210,7 @@ public class PlayfabManager : MonoBehaviour
     /// 
     /// For cheat prevention client is not able to update stats. to update login to playfab > YourGame > Settings (on left) > API Features > Allow client to post player statistics > Save  button
     /// </summary>
-    //public void SetStats()
+    //private void SetStats()
     //{
     //    var sentStats = new List<StatisticUpdate>
     //    {
@@ -235,7 +231,7 @@ public class PlayfabManager : MonoBehaviour
     //    error => { Debug.Log(error.GenerateErrorReport()); });
     //}
 
-    public void StartCloudUpdatePlayerStats()
+    private void SetStats_CloudFunction()
     {
         PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest()
         {
@@ -265,7 +261,7 @@ public class PlayfabManager : MonoBehaviour
         );
     }
 
-    public void GetStats()
+    private void GetStats()
     {
         PlayFabClientAPI.GetPlayerStatistics(new GetPlayerStatisticsRequest(),
         result =>
@@ -285,14 +281,14 @@ public class PlayfabManager : MonoBehaviour
                         break;
                 }
             }
-            Debug.Log("Received Stats " +
-                string.Join(", ", result.Statistics.Select(x => x.StatisticName + " " + x.Value))
+            Debug.Log("Received Stats " + string.Join(", ", result.Statistics.Select(x => x.StatisticName + " " + x.Value))
             );
         },
         error => { Debug.Log(error.GenerateErrorReport()); });
     }
 
-    public void GetLeaderboard()
+    [Button]
+    private void GetLeaderboard()
     {
         PlayFabClientAPI.GetLeaderboard(new GetLeaderboardRequest
         {
@@ -310,8 +306,8 @@ public class PlayfabManager : MonoBehaviour
         error => { Debug.Log(error.GenerateErrorReport()); });
     }
 
-    //[Button]
-    public void GetPlayerData()
+    [Button]
+    private void GetPlayerData()
     {
         PlayFabClientAPI.GetUserData(new GetUserDataRequest()
         {
@@ -320,31 +316,37 @@ public class PlayfabManager : MonoBehaviour
         },
         result =>
         {
+            string log = "";
+            foreach (var data in result.Data)
+            {
+                log += data.Key + ": " + data.Value.Value + "\n";
+            }
+            Debug.Log("Received PlayerData: " + log);
+
             if (result.Data == null || !result.Data.ContainsKey("Skins"))
             {
                 Debug.Log("Skins not set");
                 return;
             }
-            Debug.Log("Received skins string: " + result.Data["Skins"].Value);
-            skinsString = result.Data["Skins"].Value;
+            receivedSkinsString = result.Data["Skins"].Value;
         },
         error => { Debug.Log(error.GenerateErrorReport()); });
 
     }
 
-    //[Button]
-    public void SetPlayerData()
+    [Button]
+    private void SetPlayerData()
     {
         PlayFabClientAPI.UpdateUserData(new UpdateUserDataRequest()
         {
             Data = new Dictionary<string, string>()
             {
-                { "Skins", skinsString }
+                { "Skins", skinsStringToSet }
             }
         },
         result =>
         {
-            Debug.Log("Updated skins: " + skinsString);
+            Debug.Log("Updated skins: " + skinsStringToSet);
         },
         error => { Debug.Log(error.GenerateErrorReport()); });
     }
