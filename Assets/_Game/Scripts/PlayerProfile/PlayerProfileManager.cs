@@ -8,9 +8,7 @@ public class PlayerProfileManager : MonoBehaviour
     public static PlayerProfileManager Instance { get; private set; }
 
     [Header("Debug")]
-#if UNITY_EDITOR
     [SerializeField] private List<StringStringPair> listDebug = new();
-#endif
 
     private Dictionary<string, string> playerData = new();
 
@@ -20,7 +18,6 @@ public class PlayerProfileManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-
         }
         else
         {

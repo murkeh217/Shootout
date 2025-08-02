@@ -347,15 +347,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4fc2ea883272ddc48a6cb1898bdc3489, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  logInAtStart: 0
+  logInAtStart: 1
   email: 
   password: 
   username: 
   loginPanel: {fileID: 0}
   AddMainPasswordPanel: {fileID: 0}
-  playerKills: 0
-  playerWinsAsMarine: 0
-  playerWinsAsAlien: 0
+  receivedPlayerKills: 0
+  playerKillsToSet: 0
   receivedSkinsString: 
   skinsStringToSet: skins string
   isClientLoggedIn: 0

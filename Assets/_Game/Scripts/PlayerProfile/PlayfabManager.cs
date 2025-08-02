@@ -4,7 +4,6 @@ using PlayFab.ClientModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayfabManager : MonoBehaviour
@@ -21,9 +20,8 @@ public class PlayfabManager : MonoBehaviour
     [SerializeField] private GameObject AddMainPasswordPanel;
 
     [Header("Statistics")]
-    [SerializeField] private int playerKills;
-    [SerializeField] private int playerWinsAsMarine;
-    [SerializeField] private int playerWinsAsAlien;
+    [SerializeField] private int receivedPlayerKills;
+    [SerializeField] private int playerKillsToSet;
 
     [Header("PlayerData")]
     [SerializeField] private string receivedSkinsString = "";
@@ -36,6 +34,10 @@ public class PlayfabManager : MonoBehaviour
     [SerializeField] private bool isEntityLoggedIn;
     [SerializeField] private bool isInternetOn;
     [SerializeField] private string playfabId;
+
+    private const string PLAYER_KILLS_STATS_KEY = "PlayerKills";
+    private const string SKINS_PLAYER_DATA_KEY = "Skins";
+    private const string PLAYER_DATA_KEY = "PlayerData";
 
     private void Awake()
     {
@@ -55,6 +57,14 @@ public class PlayfabManager : MonoBehaviour
         if (string.IsNullOrEmpty(PlayFabSettings.TitleId))
         {
             PlayFabSettings.TitleId = "154DB9";
+        }
+    }
+
+    private void Start()
+    {
+        if(logInAtStart)
+        {
+            LogIn();
         }
     }
 
@@ -89,12 +99,12 @@ public class PlayfabManager : MonoBehaviour
 #endif
 #if UNITY_ANDROID
         string id = GetMobileId();
-        Debug.Log("logging to Playfab with id " + id + "...");
+        Debug.Log("logging to Playfab with id " + id + "...", this);
         var requestAndroid = new LoginWithAndroidDeviceIDRequest { AndroidDeviceId = id, CreateAccount = true };
         PlayFabClientAPI.LoginWithAndroidDeviceID(requestAndroid, 
             result =>
             {
-                Debug.Log($"Login Success, result.PlayFabId {result.PlayFabId}");
+                Debug.Log($"Login Success, result.PlayFabId {result.PlayFabId}", this);
 
                 if(loginPanel != null)
                     loginPanel.SetActive(false);
@@ -114,7 +124,7 @@ public class PlayfabManager : MonoBehaviour
 
     private void OnEmailLoginSuccess(LoginResult result)
     {
-        Debug.Log("mail Login Success");
+        Debug.Log("mail Login Success", this);
         PlayerPrefs.SetString("EMAIL", email);
         PlayerPrefs.SetString("PASSWORD", password);
 
@@ -128,7 +138,7 @@ public class PlayfabManager : MonoBehaviour
 
     private void SetPlayerID()
     {
-        Debug.Log("SetPlayerID() " + PlayFabSettings.staticPlayer.PlayFabId);
+        Debug.Log("SetPlayerID() " + PlayFabSettings.staticPlayer.PlayFabId, this);
         //CrashlyticsManager.OnPlayfabIdSet(PlayFabSettings.staticPlayer.PlayFabId);
     }
 
@@ -154,11 +164,11 @@ public class PlayfabManager : MonoBehaviour
                 },
                     result =>
                     {
-                        Debug.Log("Display name updated successfully: " + result.DisplayName);
+                        Debug.Log("Display name updated successfully: " + result.DisplayName, this);
                     },
                     error =>
                     {
-                        Debug.LogError("Error updating display name: " + error.GenerateErrorReport());
+                        Debug.LogError("Error updating display name: " + error.GenerateErrorReport(), this);
                     });
                 GetStats();
                 GetPlayerData(); // probably not needed here because just-registered player doesn't get any skins
@@ -196,7 +206,7 @@ public class PlayfabManager : MonoBehaviour
         PlayFabClientAPI.AddUsernamePassword(addLoginRequest,
             result =>
             {
-                Debug.Log("OnClickAddLogin() Success");
+                Debug.Log("OnClickAddLogin() Success", this);
                 PlayerPrefs.SetString("EMAIL", email);
                 PlayerPrefs.SetString("PASSWORD", password);
                 AddMainPasswordPanel.SetActive(false);
@@ -210,57 +220,49 @@ public class PlayfabManager : MonoBehaviour
     /// 
     /// For cheat prevention client is not able to update stats. to update login to playfab > YourGame > Settings (on left) > API Features > Allow client to post player statistics > Save  button
     /// </summary>
-    //private void SetStats()
-    //{
-    //    var sentStats = new List<StatisticUpdate>
-    //    {
-    //        new StatisticUpdate { StatisticName = "Kills", Value = playerKills },
-    //        new StatisticUpdate { StatisticName = "WinsAsMarine", Value = playerWinsAsMarine },
-    //        new StatisticUpdate { StatisticName = "WinsAsAlien", Value = playerWinsAsAlien }
-    //    };
-    //    PlayFabClientAPI.UpdatePlayerStatistics(new UpdatePlayerStatisticsRequest
-    //    {
-    //
-    //        Statistics = sentStats
-    //    },
-    //    result => { 
-    //        Debug.Log("Sent Stats " + string.Join(", ",
-    //            sentStats.Select(x => x.StatisticName + " " + x.Value))
-    //        ); 
-    //    },
-    //    error => { Debug.Log(error.GenerateErrorReport()); });
-    //}
-
-    private void SetStats_CloudFunction()
+    [Button]
+    private void SetStatistics()
     {
-        PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest()
+        var sentStats = new List<StatisticUpdate>
         {
-            FunctionName = "UpdatePlayerStats",
-            FunctionParameter = new
-            {
-                kills = this.playerKills,
-                winsAsMarine = this.playerWinsAsMarine,
-                winsAsAlien = this.playerWinsAsAlien,
-            },
-            GeneratePlayStreamEvent = true, // Optional - Shows this event in PlayStream
+            new StatisticUpdate { StatisticName = PLAYER_KILLS_STATS_KEY, Value = playerKillsToSet },
+        };
+        PlayFabClientAPI.UpdatePlayerStatistics(new UpdatePlayerStatisticsRequest
+        {
+            Statistics = sentStats
         },
-        result =>
-        {
-            Debug.Log("StartCloudUpdatePlayerStats successful");
-            //commented becuse of build erors
-            //Debug.Log(PlayFab.PfEditor.Json.JsonWrapper.SerializeObject(result.FunctionResult));
-            //JsonObject jsonResult = (JsonObject)result.FunctionResult;
-            //object messageValue;
-            //jsonResult.TryGetValue("messageValue", out messageValue); // note how "messageValue" directly corresponds to the JSON values set in CloudScript
-            //Debug.Log((string)messageValue);
+        result => { 
+            Debug.Log("SetStats() successfullly sent: " + string.Join(", ", sentStats.Select(x => x.StatisticName + " " + x.Value)), this); 
         },
-        error =>
-        {
-            Debug.Log(error.GenerateErrorReport());
-        }
-        );
+        error => { Debug.Log(error.GenerateErrorReport()); });
     }
 
+    //private void SetStatistics_CloudFunction()
+    //{
+    //    PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest()
+    //    {
+    //        FunctionName = "UpdatePlayerStats",
+    //        FunctionParameter = new
+    //        {
+    //            kills = this.playerKills,
+    //        },
+    //        GeneratePlayStreamEvent = true, // Optional - Shows this event in PlayStream
+    //    },
+    //    result =>
+    //    {
+    //        Debug.Log("StartCloudUpdatePlayerStats successful", this);
+    //        //commented becuse of build erors
+    //        //Debug.Log(PlayFab.PfEditor.Json.JsonWrapper.SerializeObject(result.FunctionResult), this);
+    //        //JsonObject jsonResult = (JsonObject)result.FunctionResult;
+    //        //object messageValue;
+    //        //jsonResult.TryGetValue("messageValue", out messageValue); // note how "messageValue" directly //corresponds to the JSON values set in CloudScript
+    //        //Debug.Log((string)messageValue, this);
+    //    },
+    //    error =>{Debug.Log(error.GenerateErrorReport());}
+    //    );
+    //}
+
+    [Button]
     private void GetStats()
     {
         PlayFabClientAPI.GetPlayerStatistics(new GetPlayerStatisticsRequest(),
@@ -270,18 +272,12 @@ public class PlayfabManager : MonoBehaviour
             {
                 switch (stat.StatisticName)
                 {
-                    case "Kills":
-                        playerKills = stat.Value;
-                        break;
-                    case "WinsAsMarine":
-                        playerWinsAsMarine = stat.Value;
-                        break;
-                    case "WinsAsAlien":
-                        playerWinsAsAlien = stat.Value;
+                    case PLAYER_KILLS_STATS_KEY:
+                        receivedPlayerKills = stat.Value;
                         break;
                 }
             }
-            Debug.Log("Received Stats " + string.Join(", ", result.Statistics.Select(x => x.StatisticName + " " + x.Value))
+            Debug.Log("GetStats() received: " + string.Join(", ", result.Statistics.Select(x => x.StatisticName + " " + x.Value), this)
             );
         },
         error => { Debug.Log(error.GenerateErrorReport()); });
@@ -292,16 +288,14 @@ public class PlayfabManager : MonoBehaviour
     {
         PlayFabClientAPI.GetLeaderboard(new GetLeaderboardRequest
         {
-            StatisticName = "Kills",
+            StatisticName = PLAYER_KILLS_STATS_KEY,
             StartPosition = 0, // top 10 players
             MaxResultsCount = 10, // top 10 players
             //ProfileConstraints = new PlayerProfileViewConstraints {} // set on PlayFab (Playfab > Settings > Client Profile Options) so no need to set here 
         },
         result =>
         {
-            Debug.Log("Received Leaderboard " +
-                string.Join(", ", result.Leaderboard.Select(x => x.DisplayName + " " + x.StatValue))
-            );
+            Debug.Log($"GetLeaderboard() received: {string.Join(", ", result.Leaderboard.Select(x => x.DisplayName + " " + x.StatValue))}", this);
         },
         error => { Debug.Log(error.GenerateErrorReport()); });
     }
@@ -319,16 +313,33 @@ public class PlayfabManager : MonoBehaviour
             string log = "";
             foreach (var data in result.Data)
             {
-                log += data.Key + ": " + data.Value.Value + "\n";
+                log += data.Key + ": " + data.Value.Value + ", ";
             }
-            Debug.Log("Received PlayerData: " + log);
+            Debug.Log("GetPlayerData(): received " + log, this);
 
-            if (result.Data == null || !result.Data.ContainsKey("Skins"))
+            if (result.Data == null)
             {
-                Debug.Log("Skins not set");
+                Debug.LogError("GetPlayerData(): PlayerData null", this);
                 return;
             }
-            receivedSkinsString = result.Data["Skins"].Value;
+
+            if (!result.Data.ContainsKey(PLAYER_DATA_KEY))
+            {
+                Debug.LogError(PLAYER_DATA_KEY + " not received", this);
+            }
+            else
+            {
+                PlayerProfileManager.Instance.SetJson(result.Data[PLAYER_DATA_KEY].Value);
+            }
+
+            if (!result.Data.ContainsKey(SKINS_PLAYER_DATA_KEY))
+            {
+                Debug.LogError(SKINS_PLAYER_DATA_KEY + " not received", this);
+            }
+            else
+            {
+                receivedSkinsString = result.Data[SKINS_PLAYER_DATA_KEY].Value;
+            }
         },
         error => { Debug.Log(error.GenerateErrorReport()); });
 
@@ -337,16 +348,18 @@ public class PlayfabManager : MonoBehaviour
     [Button]
     private void SetPlayerData()
     {
+        string playerDataJson = PlayerProfileManager.Instance.GetJson();
         PlayFabClientAPI.UpdateUserData(new UpdateUserDataRequest()
         {
             Data = new Dictionary<string, string>()
             {
-                { "Skins", skinsStringToSet }
+                { PLAYER_DATA_KEY, playerDataJson },
+                { SKINS_PLAYER_DATA_KEY, skinsStringToSet }
             }
         },
         result =>
         {
-            Debug.Log("Updated skins: " + skinsStringToSet);
+            Debug.Log("SetPlayerData() sent successfully: " + skinsStringToSet + ", " + playerDataJson, this);
         },
         error => { Debug.Log(error.GenerateErrorReport()); });
     }
