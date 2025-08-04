@@ -86,10 +86,10 @@ public class PlayfabManager : MonoBehaviour
 #if UNITY_STANDALONE
         if (PlayerPrefs.HasKey("EMAIL"))
         {
-            userEmail = PlayerPrefs.GetString("EMAIL");
-            Debug.Log("logging to Playfab with email " + userEmail + "...");
-            userPassword = PlayerPrefs.GetString("PASSWORD");
-            var request = new LoginWithEmailAddressRequest { Email = userEmail, Password = userPassword };
+            email = PlayerPrefs.GetString("EMAIL");
+            Debug.Log("logging to Playfab with email " + email + "...");
+            password = PlayerPrefs.GetString("PASSWORD");
+            var request = new LoginWithEmailAddressRequest { Email = email, Password = password };
             PlayFabClientAPI.LoginWithEmailAddress(request, OnEmailLoginSuccess, OnEmailLoginFailure);
         }
         else
@@ -101,25 +101,29 @@ public class PlayfabManager : MonoBehaviour
         string id = GetMobileId();
         Debug.Log("logging to Playfab with id " + id + "...", this);
         var requestAndroid = new LoginWithAndroidDeviceIDRequest { AndroidDeviceId = id, CreateAccount = true };
-        PlayFabClientAPI.LoginWithAndroidDeviceID(requestAndroid, 
-            result =>
-            {
-                Debug.Log($"Login Success, result.PlayFabId {result.PlayFabId}", this);
-
-                if(loginPanel != null)
-                    loginPanel.SetActive(false);
-
-                GetStats();
-                GetPlayerData();
-                SetPlayerID();
-            },
-            error => { Debug.LogError(error.GenerateErrorReport()); }
+        PlayFabClientAPI.LoginWithAndroidDeviceID(requestAndroid, OnLoginMobileSuccess,
+            error => { Debug.LogError(error.GenerateErrorReport()); 
+            }
         );
 #endif
 #if UNITY_IOS
-        var requestIOS = new LoginWithIOSDeviceIDRequest { DeviceId = ReturnMobileID(), CreateAccount = true };
-        PlayFabClientAPI.LoginWithIOSDeviceID(requestIOS, OnLoginMobileSuccess, OnLoginMobileFailure);
+        var requestIOS = new LoginWithIOSDeviceIDRequest { DeviceId = GetMobileId(), CreateAccount = true };
+        PlayFabClientAPI.LoginWithIOSDeviceID(requestIOS, OnLoginMobileSuccess, 
+            error => {Debug.LogError(error.GenerateErrorReport());}
+            );
 #endif
+    }
+
+    private void OnLoginMobileSuccess(LoginResult result)
+    {
+        Debug.Log($"Login Success, result.PlayFabId {result.PlayFabId}", this);
+
+        if (loginPanel != null)
+            loginPanel.SetActive(false);
+
+        GetStats();
+        GetPlayerData();
+        SetPlayerID();
     }
 
     private void OnEmailLoginSuccess(LoginResult result)
