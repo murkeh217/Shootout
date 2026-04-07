@@ -20,13 +20,6 @@ namespace JUTPSEditor
             Undo.RegisterCreatedObjectUndo(gameManager, "game manager creation");
             gameManager.AddComponent<JUGameManager>();
         }
-        [MenuItem("GameObject/JUTPS Create/Input Manager", false, -99)]
-        public static void CreateInputManager()
-        {
-            var inputManager = new GameObject("JU Input Manager");
-            Undo.RegisterCreatedObjectUndo(inputManager, "input manager creation");
-            inputManager.AddComponent<JUInputManager>();
-        }
 
         [MenuItem("GameObject/JUTPS Create/Camera/Simple Camera Controller", false, 1)]
         public static void CreateNewCamera()
@@ -56,9 +49,8 @@ namespace JUTPSEditor
         [MenuItem("GameObject/JUTPS Create/Quick Scene Setup", false, -200)]
         public static void QuickSceneSetup()
         {
-            CreateInputManager();
             CreateGameManager();
-            CreateNewCamera();
+            //CreateNewCamera();
         }
 
 
@@ -173,6 +165,8 @@ namespace JUTPSEditor
                 return Vector3.zero;
             }
         }
+
+
 
         [UnityEditor.MenuItem("GameObject/JUTPS Create/Cover Trigger", false, 0)]
         public static void CreateCoverTrigger()

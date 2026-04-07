@@ -1,7 +1,7 @@
-﻿using System.Collections;
+﻿using JUTPS.JUInputSystem;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using JUTPS.JUInputSystem;
 
 namespace JUTPS.ActionScripts
 {
@@ -27,19 +27,25 @@ namespace JUTPS.ActionScripts
 
             if (BlockZPosition)
             {
-                Vector3 velocity = rb.linearVelocity; velocity.z = 0;
-                rb.linearVelocity = velocity;
+                Vector3 velocity = rb.velocity; velocity.z = 0;
+                rb.velocity = velocity;
 
                 transform.position = new Vector3(transform.position.x, transform.position.y, startZPosition);
             }
 
             if (UseVerticalInputToCrouch == false) return;
+
+            if (!TPSCharacter.Inputs)
+                return;
+
+            Vector2 moveAxis = TPSCharacter.Inputs.MoveAxis;
+
             //Crouch
-            if (JUInput.GetAxis(JUInput.Axis.MoveVertical) < -0.2f && TPSCharacter.IsCrouched == false)
+            if (moveAxis.y < -0.2f && TPSCharacter.IsCrouched == false)
             {
                 TPSCharacter.IsCrouched = true;
             }
-            if (JUInput.GetAxis(JUInput.Axis.MoveVertical) > 0.2f && TPSCharacter.IsCrouched == true)
+            if (moveAxis.y > 0.2f && TPSCharacter.IsCrouched == true)
             {
                 TPSCharacter.IsCrouched = false;
             }

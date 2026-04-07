@@ -292,8 +292,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 3620442512568140147}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: Equip
+        m_TargetAssemblyTypeName: JUTPS.InventorySystem.UI.InventorySlotUI, Assembly-CSharp
+        m_MethodName: Unequip
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -410,7 +410,7 @@ MonoBehaviour:
   EmptySlotSprite: {fileID: 0}
   ItemQuantityText: {fileID: 830339290442675432}
   Outline: {fileID: 5334758048371790163}
-  EnableOptions: 1
+  EnableOptionsPanel: 0
   AutoEquipOnDrop: 0
   IsLootSlot: 0
   AllowItemsWithTags:

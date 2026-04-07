@@ -78,6 +78,9 @@ namespace JUTPS.FX
         }
         public static void HitCheck(string CollidedObjectTag, Vector3 hitPosition = default(Vector3), float Damage = 0)
         {
+            if (!instance)
+                return;
+
             foreach (string tag in instance.HitTags)
             {
                 if (CollidedObjectTag == tag)

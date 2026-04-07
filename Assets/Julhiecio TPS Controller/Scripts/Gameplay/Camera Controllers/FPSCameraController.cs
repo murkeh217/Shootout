@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using JUTPS.JUInputSystem;
 using JUTPS.WeaponSystem;
+using JUTPS.VehicleSystem;
 
 namespace JUTPS.CameraSystems
 {
-
+    [AddComponentMenu("JU TPS/Cameras/JU FPS Camera Controller")]
     public class FPSCameraController : JUCameraController
     {
         private JUTPS.CharacterBrain.JUCharacterBrain characterTarget;
-        float xmouse, ymouse;
+        float ymouse, xmouse;
         float SmoothedYMouse, SmoothedXMouse;
         float ScopeModeRecoil;
         float weight;
@@ -18,6 +19,7 @@ namespace JUTPS.CameraSystems
 
         Vector3 SmoothedCameraPosition;
 
+        public JUPlayerCharacterInputAsset InputAsset;
         public CameraState FPSCameraState = new CameraState("FPS Camera State", 0, 100, 50);
         public CameraState AimModeCameraState = new CameraState("FPS Camera State", 0, 100, 50);
         public CameraState DrivingModeCameraState = new CameraState("FPS Camera State", 0, 1000, 70);
@@ -33,13 +35,19 @@ namespace JUTPS.CameraSystems
         // Start is called before the first frame update
         protected override void Start()
         {
+            var defaultTargetToFollow = TargetToFollow;
+
+            // Find the target to follow if is null.
             base.Start();
 
-            if (TargetToFollow.TryGetComponent(out JUTPS.CharacterBrain.JUCharacterBrain JUcharacter))
+            if (TargetToFollow.root.TryGetComponent(out JUCharacterController JUcharacter))
             {
                 characterTarget = JUcharacter;
-                TargetToFollow = characterTarget.HumanoidSpine;
                 characterTarget.LocomotionMode = JUTPS.CharacterBrain.JUCharacterBrain.MovementMode.AwaysInFireMode;
+
+                // Only use the spline only if there was not a default transform to follow.
+                if (defaultTargetToFollow == null)
+                    TargetToFollow = characterTarget.HumanoidSpine;
             }
         }
 
@@ -48,29 +56,32 @@ namespace JUTPS.CameraSystems
         {
             if (Cursor.lockState != CursorLockMode.Locked && JUGameManager.IsMobileControls == false)
             {
-                xmouse = 0;
                 ymouse = 0;
+                xmouse = 0;
                 return;
             }
 
             // Mouse Input
-            xmouse = (Aiming ? 30 : 100) * JUInput.GetAxis(JUInput.Axis.RotateVertical) / 100;
-            ymouse = (Aiming ? 30 : 100) * JUInput.GetAxis(JUInput.Axis.RotateHorizontal) / 100;
+            if (InputAsset)
+            {
+                ymouse = (Aiming ? 30 : 100) * InputAsset.LookAxis.y / 100;
+                xmouse = (Aiming ? 30 : 100) * InputAsset.LookAxis.x / 100;
+            }
 
             // Driving Camera 
             if (characterTarget != null)
             {
-                if (characterTarget.IsDriving && characterTarget.VehicleInArea != null)
+                if (characterTarget.IsDriving)
                 {
-                    xmouse = 0;
                     ymouse = 0;
-                    SetCameraRotation(TargetToFollow.transform.rotation.x, characterTarget.VehicleInArea.transform.eulerAngles.y, false);
+                    xmouse = 0;
+                    SetCameraRotation(TargetToFollow.transform.rotation.x, characterTarget.DriveVehicles.CurrentVehicle.transform.eulerAngles.y, false);
 
                 }
             }
             else
             {
-                RotateCamera(xmouse, ymouse, upward: characterTarget == null ? TargetToFollow.up : characterTarget.transform.up);
+                RotateCamera(ymouse, xmouse, upward: characterTarget == null ? TargetToFollow.up : characterTarget.transform.up);
                 return;
             }
 
@@ -80,12 +91,14 @@ namespace JUTPS.CameraSystems
             if (characterTarget.IsDriving)
             {
                 SetCameraStateTransition(GetCurrentCameraState, DrivingModeCameraState);
-                RotateCamera(xmouse, ymouse, upward: characterTarget.VehicleInArea.transform.up, AlternativeTargetToCalculate: characterTarget.VehicleInArea.transform);
+
+                JUVehicle drivingVehicle = characterTarget.DriveVehicles.CurrentVehicle;
+                RotateCamera(ymouse, xmouse, upward: drivingVehicle.transform.up, AlternativeTargetToCalculate: drivingVehicle.transform);
             }
             else
             {
                 SetCameraStateTransition(GetCurrentCameraState, Aiming ? AimModeCameraState : FPSCameraState);
-                RotateCamera(xmouse, ymouse, upward: characterTarget == null ? TargetToFollow.up : characterTarget.transform.up);
+                RotateCamera(ymouse, xmouse, upward: characterTarget == null ? TargetToFollow.up : characterTarget.transform.up);
             }
 
         }
@@ -110,14 +123,14 @@ namespace JUTPS.CameraSystems
 
             Aiming = characterTarget.IsAiming;
 
-            if (characterTarget.WeaponInUseRightHand == null || characterTarget.IsDriving) return;
+            if (characterTarget.RightHandWeapon == null || characterTarget.IsDriving) return;
 
-            if (characterTarget.WeaponInUseRightHand.AimMode != Weapon.WeaponAimMode.None && characterTarget.FiringMode)
+            if (characterTarget.RightHandWeapon.AimMode != Weapon.WeaponAimMode.None && characterTarget.FiringMode)
             {
-                var gun = characterTarget.WeaponInUseRightHand;
+                var gun = characterTarget.RightHandWeapon;
 
-                SmoothedYMouse = Mathf.Lerp(SmoothedYMouse, ymouse * (Aiming ? AimHorizontalIntensity : HorizontalIntensity), SwaySpeed * Time.deltaTime);
-                SmoothedXMouse = Mathf.Lerp(SmoothedXMouse, xmouse * (Aiming ? AimVerticalIntensity : VerticalIntensity), SwaySpeed * Time.deltaTime);
+                SmoothedYMouse = Mathf.Lerp(SmoothedYMouse, xmouse * (Aiming ? AimHorizontalIntensity : HorizontalIntensity), SwaySpeed * Time.deltaTime);
+                SmoothedXMouse = Mathf.Lerp(SmoothedXMouse, ymouse * (Aiming ? AimVerticalIntensity : VerticalIntensity), SwaySpeed * Time.deltaTime);
                 ScopeModeRecoil = Mathf.Lerp(ScopeModeRecoil, 0, 5 * Time.deltaTime);
                 //Debug.Log("rot int = " + SmoothedXMouse);
 

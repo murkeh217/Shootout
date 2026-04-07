@@ -37,6 +37,11 @@ namespace JUTPS
         public UnityEvent OnContinue;
 
         /// <summary>
+        /// If true, the player can pause or unpause the game.
+        /// </summary>
+        public static bool AllowSetPaused { get; set; }
+
+        /// <summary>
         /// Return true if the game is paused.
         /// </summary>
         public static bool IsPaused { get; private set; }
@@ -60,7 +65,6 @@ namespace JUTPS
                 }
                 return _instance;
             }
-            set { }
         }
 
         /// <summary>
@@ -73,11 +77,19 @@ namespace JUTPS
 
         private void Awake()
         {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged += OnExitPlayMode;
+#endif
+
             if (this != Instance)
             {
                 Destroy(this);
                 return;
             }
+
+            AllowSetPaused = true;
+            Time.timeScale = 1;
+            IsPaused = false;
 
             _slowmotionInstance = FindObjectOfType<FX.JUSlowmotion>();
             PauseInputs.OnButtonsDown.AddListener(OnPressPauseInput);
@@ -98,6 +110,7 @@ namespace JUTPS
             // Fix problem on unload the current scene if the game is paused, 
             // after load another scene the IsPaused continues as true.
             Continue();
+            AllowSetPaused = true;
         }
 
         private void OnPressPauseInput()
@@ -130,7 +143,9 @@ namespace JUTPS
         /// <param name="paused">If true, the game is paused, freezing the time, if not, the game will be continued.</param>
         public static void SetPaused(bool paused)
         {
-            if (IsPaused == paused)
+            Debug.Assert(Instance, $"There is no a {nameof(JUPauseGame)} instance on the scene.");
+
+            if (IsPaused == paused || !AllowSetPaused)
                 return;
 
             IsPaused = !IsPaused;
@@ -142,5 +157,21 @@ namespace JUTPS
             if (IsPaused) Instance.OnPause.Invoke();
             else Instance.OnContinue.Invoke();
         }
+
+#if UNITY_EDITOR
+        private void OnExitPlayMode(UnityEditor.PlayModeStateChange mode)
+        {
+            if (mode != UnityEditor.PlayModeStateChange.ExitingPlayMode)
+                return;
+
+            UnityEditor.EditorApplication.playModeStateChanged -= OnExitPlayMode;
+
+            IsPaused = false;
+            Time.timeScale = 1;
+
+            _instance = null;
+            _slowmotionInstance = null;
+        }
+#endif
     }
 }

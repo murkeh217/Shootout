@@ -1,11 +1,388 @@
-﻿using UnityEngine;
+﻿using JU;
+using JUTPS.VehicleSystem.Inputs;
+using UnityEngine;
 
 namespace JUTPS.VehicleSystem
 {
 	/// <summary>
 	/// Base for Ju vehicle controllers.
 	/// </summary>
-	public class Vehicle : MonoBehaviour
+	public class JUVehicle : MonoBehaviour
+	{
+		protected float _horizontal;
+		protected float _vertical;
+
+		protected const float INPUTS_DEATH_ZONE = 0.1f;
+
+		/// <summary>
+		/// Return true if the vehicle engine is on.
+		/// The vehicle can't be controled if the engine is off.
+		/// </summary>
+		[Header("Vehicle State")]
+		public bool IsOn;
+
+		/// <summary>
+		/// When true the vehicle can be controlled by the player or IAs.
+		/// </summary>
+		public bool ControlsEnabled;
+
+		/// <summary>
+		/// Use player controls ?
+		/// </summary>
+		[Header("Settings")]
+		public bool UsePlayerInputs;
+
+		/// <summary>
+		/// Returns the horizontal value similar to <see cref="Horizontal"/>input but with smooth provided from <see cref="DrivePadSmooth"/>.
+		/// </summary>
+		public float FinalHorizontal { get; protected set; }
+
+		/// <summary>
+		/// Returns the vertical value similar to <see cref="Vertical"/>input but with smooth provided from <see cref="DrivePadSmooth"/>.
+		/// </summary>
+		public float FinalVertical { get; protected set; }
+
+		/// <summary>
+		/// Returns the relative vehicle velocity.
+		/// </summary>
+		public Vector3 LocalVelocity { get; private set; }
+
+		/// <summary>
+		/// Returns the vehicle velocity relative to the world.
+		/// </summary>
+		public Vector3 Velocity { get; private set; }
+
+		/// <summary>
+		/// The rigidbody body of this vehicle.
+		/// </summary>
+		public Rigidbody RigidBody { get; private set; }
+
+		/// <summary>
+		/// Returns true if the vehicle is grounded.
+		/// </summary>
+		public bool IsGrounded { get; protected set; }
+
+		/// <summary>
+		/// Returns the vehicle forward speed.
+		/// </summary>
+		public float ForwardSpeed
+		{
+			get => LocalVelocity.z;
+		}
+
+		/// <summary>
+		/// The vertical input to control the vehicle movement. <para/>
+		/// A value between -1 to 1 where -1 is to move to backward, 0 to be stoped and 1 to move to forward.
+		/// </summary>
+		public float Vertical
+		{
+			get => _vertical;
+			set => _vertical = Mathf.Clamp(value, -1, 1);
+		}
+
+		/// <summary>
+		/// The horizontal input to control the vehicle direction.
+		/// A value between -1 to 1 where -1 is to turn to left, 0 to not turn and 1 is to move to right.
+		/// </summary>
+		public float Horizontal
+		{
+			get => _horizontal;
+			set => _horizontal = Mathf.Clamp(value, -1, 1);
+		}
+
+		/// <summary>
+		/// Create a <see cref="JUVehicle"/> controller component instance.
+		/// </summary>
+		protected JUVehicle()
+		{
+			ControlsEnabled = true;
+			UsePlayerInputs = true;
+		}
+
+#if UNITY_EDITOR
+
+		/// <summary>
+		/// Used only by the editor, called after change some property on the editor to validade variables.
+		/// </summary>
+		protected virtual void OnValidate()
+		{
+		}
+#endif
+
+		/// <summary>
+		/// Called when the scene load.
+		/// </summary>
+		protected virtual void Awake()
+		{
+			RigidBody = GetComponent<Rigidbody>();
+
+			if (TryGetComponent(out IIsDead dead))
+			{
+				if (dead.IsDead)
+				{
+					IsOn = false;
+				}
+
+				dead.OnDeath += () =>
+				{
+					IsOn = false;
+				};
+			}
+		}
+
+		/// <summary>
+		/// Called when the game starts, after <see cref="Awake"/>.
+		/// </summary>
+		protected virtual void Start()
+		{
+
+		}
+
+		/// <summary>
+		/// Called each physx update before <see cref="Update"/>.
+		/// </summary>
+		protected virtual void FixedUpdate()
+		{
+		}
+
+		/// <summary>
+		/// Called on each frame updating vehicle logic and controls.
+		/// </summary>
+		protected virtual void Update()
+		{
+			if (!RigidBody)
+				return;
+
+			if (UsePlayerInputs)
+				UpdatePlayerInputs();
+
+			// Update properties
+			Velocity = RigidBody.velocity;
+			LocalVelocity = transform.InverseTransformDirection(Velocity);
+		}
+
+		protected float ProcessInput(float targetInput, float currentInput, float riseRate, float fallRate, float deathZone = 0.1f)
+		{
+			targetInput = Mathf.Clamp(targetInput, -1, 1);
+
+			if (Mathf.Abs(targetInput) <= deathZone)
+				targetInput = 0f;
+
+			if (targetInput == 0 && Mathf.Abs(currentInput) <= deathZone)
+				return 0;
+
+			if (targetInput != 0)
+			{
+				float acceleration = riseRate * Time.deltaTime;
+				if (currentInput < targetInput) currentInput = Mathf.Min(currentInput + acceleration, targetInput);
+				else currentInput = Mathf.Max(currentInput - acceleration, targetInput);
+			}
+			else
+			{
+				currentInput -= fallRate * Time.deltaTime * (currentInput > 0 ? 1 : -1);
+			}
+
+			currentInput = Mathf.Clamp(currentInput, -1, 1);
+
+			return currentInput;
+		}
+
+		protected virtual void UpdatePlayerInputs()
+		{
+		}
+
+		/// <summary>
+		/// Add an additional force on the vehicle to increase the acceleration.
+		/// </summary>
+		/// <param name="AccelerationForce">The force magnetude.</param>
+		protected void AddForwardAcceleration(float AccelerationForce)
+		{
+			if (!IsOn || !RigidBody)
+				return;
+
+			RigidBody.AddRelativeForce(Vector3.forward * AccelerationForce, ForceMode.Acceleration);
+		}
+
+		/// <summary>
+		/// Align the vehicle to a normal direction.
+		/// </summary>
+		/// <param name="Normal">The normal to align</param>
+		/// <param name="alignmentSpeed"></param>
+		protected void AlignVehicleToNormal(Vector3 Normal, float alignmentSpeed)
+		{
+			float speed = Mathf.Clamp01(alignmentSpeed * Time.deltaTime);
+			transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.FromToRotation(transform.up, Normal) * transform.rotation, speed);
+		}
+
+		/// <summary>
+		/// Sets the vehicle center of mass.
+		/// </summary>
+		/// <param name="center">The relative position tho the vehicle.</param>
+		public virtual void UpdateCenterOfMass(Vector3 center)
+		{
+			RigidBody.centerOfMass = center;
+		}
+
+		/// <summary>
+		/// Draw debug gizmos.
+		/// </summary>
+		protected virtual void OnDrawGizmos()
+		{
+		}
+
+		[System.Serializable]
+		public class VehicleOverturnCheck
+		{
+			[Header("Overturn Check")]
+			public Vector3 CheckboxPosition = new Vector3(0, 1.5f, 0);
+			public Vector3 CheckboxScale = new Vector3(0.4f, 0.3f, 1.5f);
+			public LayerMask CheckboxLayerMask;
+
+			[Header("Anti-Overturn")]
+			public bool EnableAntiOverturn;
+			public float AntiOverturnSpeed = 1f;
+
+			[Header("State")]
+			public bool IsOverturned;
+
+			private RaycastHit GroundHit;
+
+			public void OverturnCheck(Transform vehicle)
+			{
+				Vector3 origin = vehicle.position + (vehicle.right * CheckboxPosition.x) + (vehicle.up * CheckboxPosition.y) + (vehicle.forward * CheckboxPosition.z);
+				var checkbox = Physics.OverlapBox(origin, CheckboxScale, vehicle.rotation, CheckboxLayerMask);
+				IsOverturned = (checkbox.Length != 0);
+			}
+			public void AntiOverturn(Transform vehicle)
+			{
+				if (!IsOverturned) return;
+				vehicle.rotation = Quaternion.Lerp(vehicle.rotation, Quaternion.FromToRotation(vehicle.up, GroundHit.normal) * vehicle.rotation, AntiOverturnSpeed * Time.deltaTime);
+			}
+		}
+
+		[System.Serializable]
+		public class VehicleOverlapBoxCheck
+		{
+			[Header("Overturn Check")]
+			public Vector3 CheckboxPosition = new Vector3(0, 0, 0);
+			public Vector3 CheckboxScale = new Vector3(0.4f, 0.4f, 0.4f);
+			public LayerMask CheckboxLayerMask;
+
+			[Header("State")]
+			public bool Collided;
+
+			private RaycastHit GroundHit;
+
+			public void Check(Transform vehicle)
+			{
+				Vector3 origin = vehicle.position + vehicle.right * CheckboxPosition.x + vehicle.up * CheckboxPosition.y + vehicle.forward * CheckboxPosition.z;
+				var checkbox = Physics.OverlapBox(origin, CheckboxScale, vehicle.rotation, CheckboxLayerMask);
+				Collided = (checkbox.Length != 0);
+				if (Collided) Debug.Log("collided");
+			}
+		}
+
+		[System.Serializable]
+		public class VehicleRaycastCheck
+		{
+			[Header("Raycast Check")]
+			public Vector3 OriginPosition = new Vector3(0, 0, 0);
+			public float RayMaxDistance = 1;
+			public LayerMask RayLayerMask;
+
+			[Header("State")]
+			public bool IsCollided;
+
+			public RaycastHit raycastHit;
+
+			public void Check(Transform vehicle, Vector3 direction)
+			{
+				Vector3 origin = vehicle.position + vehicle.right * OriginPosition.x + vehicle.up * OriginPosition.y + vehicle.forward * OriginPosition.z;
+				IsCollided = Physics.Raycast(origin, direction, out raycastHit, RayMaxDistance, RayLayerMask);
+			}
+		}
+
+		public static class VehicleGizmo
+		{
+			public static void DrawVector3Position(Vector3 position, Transform Vehicle, string Label = "", Color color = default(Color))
+			{
+				if (color != Color.clear)
+				{
+					Gizmos.color = color;
+				}
+
+				Vector3 wordlPosition = Vehicle.position + Vehicle.right * position.x + Vehicle.up * position.y + Vehicle.forward * position.z;
+				if (Label != "")
+				{
+#if UNITY_EDITOR
+					UnityEditor.Handles.Label(wordlPosition + Vector3.up * 0.1f, Label);
+#endif
+				}
+				Gizmos.DrawSphere(wordlPosition, 0.03f);
+			}
+			public static void DrawVehicleInclination(Transform RotationParent, Transform RotationChild)
+			{
+				if (RotationChild == null || RotationParent == null) return;
+
+				//Points
+				Vector3 pos1 = RotationParent.position + RotationParent.up;
+				Vector3 pos2 = RotationChild.position + RotationChild.up;
+
+				Gizmos.color = Color.white;
+				Gizmos.DrawWireSphere(pos1, 0.01f);
+				Gizmos.color = Color.white;
+				Gizmos.DrawWireSphere(pos2, 0.01f);
+
+				//Base
+				Gizmos.color = Color.grey;
+				Gizmos.DrawRay(RotationParent.position, RotationParent.up);
+
+				//Real rotation
+				Gizmos.color = Color.green;
+				Gizmos.DrawRay(RotationChild.position, RotationChild.up);
+#if UNITY_EDITOR
+
+				//Infos
+				UnityEditor.Handles.Label(RotationParent.position + RotationChild.up * 1.2f, Vector3.Angle(RotationChild.up, RotationParent.up).ToString("00.0"));
+#endif
+
+				//Base Lines
+				Gizmos.color = Color.green;
+				Gizmos.DrawLine(RotationParent.position - RotationParent.right, RotationParent.position + RotationParent.right);
+#if UNITY_EDITOR
+
+				//Disc
+				UnityEditor.Handles.color = Color.green;
+				UnityEditor.Handles.DrawWireArc(RotationParent.position, RotationParent.forward, RotationParent.right, 180, 1);
+#endif
+			}
+			public static void DrawRaycastHit(JUVehicle.VehicleRaycastCheck rayCheck, Transform vehicle, Vector3 direction)
+			{
+				Gizmos.color = rayCheck.IsCollided ? Color.green : Color.red;
+
+				Vector3 origin = vehicle.position + vehicle.right * rayCheck.OriginPosition.x + vehicle.up * rayCheck.OriginPosition.y + vehicle.forward * rayCheck.OriginPosition.z;
+
+				Gizmos.DrawLine(origin, rayCheck.IsCollided ? rayCheck.raycastHit.point : origin + direction * rayCheck.RayMaxDistance);
+			}
+			public static void DrawOverturnCheck(JUVehicle.VehicleOverturnCheck OverturnCheck, Transform Vehicle)
+			{
+				if (OverturnCheck.EnableAntiOverturn)
+				{
+					Gizmos.matrix = Matrix4x4.TRS(Vehicle.position, Vehicle.rotation, Vehicle.localScale);
+					Gizmos.color = OverturnCheck.IsOverturned ? Color.green : Color.red;
+					Gizmos.DrawWireCube(Vector3.zero + Vector3.up * OverturnCheck.CheckboxPosition.y + Vector3.right * OverturnCheck.CheckboxPosition.x + Vector3.forward * OverturnCheck.CheckboxPosition.z, OverturnCheck.CheckboxScale);
+				}
+			}
+			public static void DrawOverlapBoxCheck(JUVehicle.VehicleOverlapBoxCheck BoxCheck, Transform Vehicle)
+			{
+				Gizmos.matrix = Matrix4x4.TRS(Vehicle.position, Vehicle.rotation, Vehicle.localScale);
+				Gizmos.color = BoxCheck.Collided ? Color.green : Color.red;
+				Gizmos.DrawWireCube(Vector3.zero + Vector3.up * BoxCheck.CheckboxPosition.y + Vector3.right * BoxCheck.CheckboxPosition.x + Vector3.forward * BoxCheck.CheckboxPosition.z, BoxCheck.CheckboxScale);
+			}
+		}
+	}
+
+	public class JUWheeledVehicle : JUVehicle
 	{
 		/// <summary>
 		/// Stores backend wheels data.
@@ -194,7 +571,7 @@ namespace JUTPS.VehicleSystem
 
 			/// <summary>
 			/// The vehicle center of mass relative to the vehicle transform. <para/>
-			/// Call the <see cref="Vehicle.UpdateCenterOfMass"/> after change it.
+			/// Call the <see cref="JUVehicle.UpdateCenterOfMass"/> after change it.
 			/// </summary>
 			public Vector3 CenterOfMass;
 
@@ -208,6 +585,7 @@ namespace JUTPS.VehicleSystem
 				TorqueForce = 600;
 				BrakeForce = 1200;
 				AutoBrakeForce = 100;
+				CenterOfMass = Vector3.zero;
 				AccelerationCurve = new AnimationCurve(new Keyframe(0, 1), new Keyframe(1, 0));
 			}
 		}
@@ -262,11 +640,12 @@ namespace JUTPS.VehicleSystem
 			}
 		}
 
-		private float _steer;
-		private float _throttle;
 		private float _brake;
 
-		private const float INPUTS_DEATH_ZONE = 0.1f;
+		/// <summary>
+		/// The <see cref="ScriptableObject"/> that contains all <see cref="JUWheeledVehicle"/> controls.
+		/// </summary>
+		public JUVehicleInputAsset PlayerInputs;
 
 		/// <summary>
 		/// The vehicle wheel.
@@ -278,12 +657,6 @@ namespace JUTPS.VehicleSystem
 		/// <see cref="Transform.up"/> with <see cref="Vector3.up"/> if <see cref="RotateToUpInAirSpeed"/> is greater than 0.
 		/// </summary>
 		protected bool CanTurnToUpInAir;
-
-		/// <summary>
-		/// Use the standard <see cref="JUInputSystem.JUInputManager"/> to provide player controls?
-		/// </summary>
-		[Header("Settings")]
-		public bool UseDefaultInputs;
 
 		/// <summary>
 		/// The engine settings.
@@ -311,36 +684,10 @@ namespace JUTPS.VehicleSystem
 		[Min(0)] public float RotateToUpInAirSpeed;
 
 		/// <summary>
-		/// Return true if the vehicle engine is on.
-		/// The vehicle can't be controled if the engine is off.
+		/// Returns the <see cref="SteerVsSpeed"/> value relative to the current velocity. <para/>
+		/// Used to improve the control on high speeds, decreasing the steer to make curves more smoothly.
 		/// </summary>
-		[Header("Vehicle State")]
-		public bool IsOn;
-
-		/// <summary>
-		/// When true the vehicle can be controlled by the player or IAs.
-		/// </summary>
-		public bool ControlsEnabled;
-
-		/// <summary>
-		/// Returns the steer value similar to <see cref="Steer"/>input but with smooth provided from <see cref="DrivePadSmooth"/>.
-		/// </summary>
-		public float FinalSteer { get; private set; }
-
-		/// <summary>
-		/// Returns the throttle value similar to <see cref="Throttle"/>input but with smooth provided from <see cref="DrivePadSmooth"/>.
-		/// </summary>
-		public float FinalThrottle { get; private set; }
-
-		/// <summary>
-		/// Returns the brake value similar to <see cref="Brake"/> input but with smooth provided from <see cref="DrivePadSmooth"/>.
-		/// </summary>
-		public float FinalBrake { get; private set; }
-
-		/// <summary>
-		/// Returns true if the vehicle is grounded.
-		/// </summary>
-		public bool IsGrounded { get; private set; }
+		public float CurrentSteerVsSpeed { get; private set; }
 
 		/// <summary>
 		/// Return ground hit info if <see cref="IsGrounded"/> is true.
@@ -348,60 +695,9 @@ namespace JUTPS.VehicleSystem
 		public WheelHit WheelHit { get; private set; }
 
 		/// <summary>
-		/// Returns the relative vehicle velocity.
-		/// </summary>
-		public Vector3 LocalVelocity { get; private set; }
-
-		/// <summary>
-		/// Returns the vehicle velocity relative to the world.
-		/// </summary>
-		public Vector3 Velocity { get; private set; }
-
-		/// <summary>
 		/// Returns the vehicle up based on the median direction of all wheels positions.
 		/// </summary>
 		public Vector3 WheelsUpDirection { get; private set; }
-
-		/// <summary>
-		/// Returns the <see cref="SteerVsSpeed"/> value relative to the current velocity. <para/>
-		/// Used to improve the control on high speeds, decreasing the steer to make curves more smoothly.
-		/// </summary>
-		public float CurrentSteerVsSpeed { get; private set; }
-
-		/// <summary>
-		/// The rigidbody body of this vehicle.
-		/// </summary>
-		public Rigidbody RigidBody { get; private set; }
-
-		public Bounds CollisionBounds { get; private set; }
-
-		/// <summary>
-		/// Returns the vehicle forward speed.
-		/// </summary>
-		public float ForwardSpeed
-		{
-			get => LocalVelocity.z;
-		}
-
-		/// <summary>
-		/// The throttle input to control the vehicle engine acceleration. <para/>
-		/// A value between -1 to 1 where -1 is to move to backward, 0 to be stoped and 1 to move to forward.
-		/// </summary>
-		public float Throttle
-		{
-			get => _throttle;
-			set => _throttle = Mathf.Clamp(value, -1, 1);
-		}
-
-		/// <summary>
-		/// The steer input to control the vehicle move direction.
-		/// A value between -1 to 1 where -1 is to turn to left, 0 to not turn and 1 is to move to right.
-		/// </summary>
-		public float Steer
-		{
-			get => _steer;
-			set => _steer = Mathf.Clamp(value, -1, 1);
-		}
 
 		/// <summary>
 		/// A value between 0 and 1 where 0 is without brake and 1 is full brake.
@@ -413,34 +709,37 @@ namespace JUTPS.VehicleSystem
 		}
 
 		/// <summary>
+		/// Returns the brake value similar to <see cref="Brake"/> input but with smooth provided from <see cref="DrivePadSmooth"/>.
+		/// </summary>
+		public float FinalBrake { get; protected set; }
+
+		/// <summary>
 		/// Return the number of wheels from the vehicle.
 		/// </summary>
 		public int WheelsCount => WheelsData.Length;
 
 		/// <summary>
-		/// Create a JUVehicle controller component instance.
+		/// Create an instance of the <see cref="JUWheeledVehicle"/>.
 		/// </summary>
-		protected Vehicle()
+		protected JUWheeledVehicle() : base()
 		{
-			WheelsData = new WheelData[0];
+			RotateToUpInAirSpeed = 1;
 
+			WheelsData = new WheelData[0];
 			Engine = new EngineSettings();
 			DrivePadSmooth = new PadSmooth();
-
-			UseDefaultInputs = true;
 			SteerVsSpeed = new AnimationCurve(new Keyframe(10, 1f), new Keyframe(35, 0.3f));
-
-			RotateToUpInAirSpeed = 1;
-			ControlsEnabled = true;
 		}
 
 #if UNITY_EDITOR
 
-		/// <summary>
-		/// Used only by the editor, called after change some property on the editor to validade variables.
-		/// </summary>
-		protected virtual void OnValidate()
+		/// <inheritdoc/>
+		protected override void OnValidate()
 		{
+			base.OnValidate();
+
+			UpdateCenterOfMass();
+
 			// Validating the vehicle accelerating curve.
 
 			int keyframeCount = Engine.AccelerationCurve.length;
@@ -466,44 +765,49 @@ namespace JUTPS.VehicleSystem
 		}
 #endif
 
-		/// <summary>
-		/// Called when the scene load.
-		/// </summary>
-		protected virtual void Awake()
+		/// <inheritdoc/>
+		protected override void Awake()
 		{
+			base.Awake();
+
 			CanTurnToUpInAir = true;
-			RigidBody = GetComponent<Rigidbody>();
 			UpdateWheelsData();
+
+#if UNITY_EDITOR
+			UnityEditor.EditorApplication.playModeStateChanged += OnExitPlayMode;
+#endif
+
+			if (PlayerInputs)
+			{
+				PlayerInputs.SetInputEnabled(true);
+			}
 		}
 
-		/// <summary>
-		/// Called when the game starts, after <see cref="Awake"/>.
-		/// </summary>
-		protected virtual void Start()
+		/// <inheritdoc/>
+		protected override void Start()
 		{
+			base.Start();
+
 			UpdateCenterOfMass();
 		}
 
-		/// <summary>
-		/// Called each physx update before <see cref="Update"/>.
-		/// </summary>
-		protected virtual void FixedUpdate()
+		/// <inheritdoc/>
+		protected override void FixedUpdate()
 		{
+			base.FixedUpdate();
+
 			if (!IsGrounded && CanTurnToUpInAir)
 				AlignVehicleToNormal(Vector3.up, RotateToUpInAirSpeed);
 		}
 
-		/// <summary>
-		/// Called on each frame updating vehicle logic and controls.
-		/// </summary>
-		protected virtual void Update()
+		/// <inheritdoc/>
+		protected override void Update()
 		{
+			base.Update();
+
 			if (!RigidBody)
 				return;
 
-			// Update properties
-			Velocity = RigidBody.linearVelocity;
-			LocalVelocity = transform.InverseTransformDirection(Velocity);
 			CurrentSteerVsSpeed = Mathf.Clamp01(SteerVsSpeed.Evaluate(Mathf.Abs(ForwardSpeed)));
 
 			ProcessInputs();
@@ -545,21 +849,38 @@ namespace JUTPS.VehicleSystem
 			}
 		}
 
+		protected override void UpdatePlayerInputs()
+		{
+			base.UpdatePlayerInputs();
+
+			if (!PlayerInputs)
+				return;
+
+			Vertical = PlayerInputs.ThrottleAxis;
+			Horizontal = PlayerInputs.SteerAxis;
+			Brake = PlayerInputs.BrakeAxis;
+		}
+
+		/// <inheritdoc/>
+		protected override void OnDrawGizmos()
+		{
+			base.OnDrawGizmos();
+
+			Gizmos.color = Color.yellow;
+			Gizmos.DrawRay(transform.position, WheelsUpDirection);
+		}
+
 		private void UpdateWheels()
 		{
-			float throttle = 0f;
-			float steer = 0f;
-			float brake = 0f;
-
 			if (!ControlsEnabled)
 			{
-				UpdateWheels(throttle, steer, brake);
+				UpdateWheels(0, 0, 0);
 				return;
 			}
 
 			float engineTorque = Engine.TorqueForce;
 			float brakeForce = Engine.BrakeForce;
-			brake = Mathf.Abs(_throttle) < INPUTS_DEATH_ZONE ? Engine.AutoBrakeForce : brakeForce * FinalBrake;
+			float brake = Mathf.Abs(_vertical) < INPUTS_DEATH_ZONE ? Engine.AutoBrakeForce : brakeForce * FinalBrake;
 
 			if (!IsOn)
 			{
@@ -585,8 +906,8 @@ namespace JUTPS.VehicleSystem
 				engineTorque *= accelerationMultiplier;
 			}
 
-			throttle = engineTorque * FinalThrottle;
-			steer = FinalSteer * CurrentSteerVsSpeed;
+			float throttle = engineTorque * FinalVertical;
+			float steer = FinalHorizontal * CurrentSteerVsSpeed;
 			UpdateWheels(throttle, steer, brake);
 		}
 
@@ -605,53 +926,68 @@ namespace JUTPS.VehicleSystem
 			float brake = _brake;
 			bool forceBrake = false;
 
-			forceBrake |= _throttle > INPUTS_DEATH_ZONE && ForwardSpeed < -0.1f;
-			forceBrake |= _throttle < -INPUTS_DEATH_ZONE && ForwardSpeed > 0.1f;
+			forceBrake |= _vertical > INPUTS_DEATH_ZONE && ForwardSpeed < -0.1f;
+			forceBrake |= _vertical < -INPUTS_DEATH_ZONE && ForwardSpeed > 0.1f;
 
 			if (forceBrake)
 				brake = 1f;
 
-			FinalSteer = ProcessInput(_steer, FinalSteer, DrivePadSmooth.RiseRateSteer, DrivePadSmooth.FallRateSteer, INPUTS_DEATH_ZONE);
-			FinalThrottle = ProcessInput(_throttle, FinalThrottle, DrivePadSmooth.RiseRateThrottle, DrivePadSmooth.FallRateThrotte, INPUTS_DEATH_ZONE);
+			FinalHorizontal = ProcessInput(_horizontal, FinalHorizontal, DrivePadSmooth.RiseRateSteer, DrivePadSmooth.FallRateSteer, INPUTS_DEATH_ZONE);
+			FinalVertical = ProcessInput(_vertical, FinalVertical, DrivePadSmooth.RiseRateThrottle, DrivePadSmooth.FallRateThrotte, INPUTS_DEATH_ZONE);
 			FinalBrake = ProcessInput(brake, FinalBrake, DrivePadSmooth.RiseRateBrake, DrivePadSmooth.RiseFallBrake, INPUTS_DEATH_ZONE);
 		}
 
-		private float ProcessInput(float targetInput, float currentInput, float riseRate, float fallRate, float deathZone = 0.1f)
+		/// <summary>
+		/// Call it after change <seealso cref="EngineSettings.CenterOfMass"/>. <para/>
+		/// Update the vehicle <see cref="Rigidbody.centerOfMass"/>.
+		/// </summary>
+		public void UpdateCenterOfMass()
 		{
-			targetInput = Mathf.Clamp(targetInput, -1, 1);
+			if (!RigidBody)
+				return;
 
-			if (Mathf.Abs(targetInput) <= deathZone)
-				targetInput = 0f;
+			UpdateCenterOfMass(Engine.CenterOfMass);
+		}
 
-			if (targetInput == 0 && Mathf.Abs(currentInput) <= deathZone)
-				return 0;
-
-			if (targetInput != 0)
-			{
-				float acceleration = riseRate * Time.deltaTime;
-				if (currentInput < targetInput) currentInput = Mathf.Min(currentInput + acceleration, targetInput);
-				else currentInput = Mathf.Max(currentInput - acceleration, targetInput);
-			}
-			else
-			{
-				currentInput -= fallRate * Time.deltaTime * (currentInput > 0 ? 1 : -1);
-			}
-
-			currentInput = Mathf.Clamp(currentInput, -1, 1);
-
-			return currentInput;
+		public override void UpdateCenterOfMass(Vector3 center)
+		{
+			base.UpdateCenterOfMass(center);
+			Engine.CenterOfMass = center;
 		}
 
 		/// <summary>
-		/// Add an additional force on the vehicle to increase the acceleration.
+		/// Call it after change/set the vehicle wheels to update the vehicle physics control.
 		/// </summary>
-		/// <param name="AccelerationForce">The force magnetude.</param>
-		protected void AddForwardAcceleration(float AccelerationForce)
+		public virtual void UpdateWheelsData()
 		{
-			if (!IsOn || !RigidBody)
+		}
+
+		/// <summary>
+		/// Returns an wheel data from the vehicle.
+		/// </summary>
+		/// <param name="index"></param>
+		/// <returns></returns>
+		public WheelData GetWheel(int index)
+		{
+			if (index < 0 || index > WheelsData.Length - 1)
+			{
+				Debug.LogError($"Invalid wheel index: {index}");
+				return null;
+			}
+
+			return WheelsData[index];
+		}
+
+		/// <summary>
+		/// Try align the vehicle on ground normal, works only if the <see cref="IsGrounded"/> is true.
+		/// </summary>
+		/// <param name="alignmentSpeed">The speed to align the vehicle.</param>
+		protected void SimulateGroundAlignment(float alignmentSpeed)
+		{
+			if (!IsGrounded)
 				return;
 
-			RigidBody.AddRelativeForce(Vector3.forward * AccelerationForce, ForceMode.Acceleration);
+			AlignVehicleToNormal(WheelsUpDirection, alignmentSpeed);
 		}
 
 		/// <summary>
@@ -692,223 +1028,29 @@ namespace JUTPS.VehicleSystem
 			if (rightWheelIsGrounded) RigidBody.AddForceAtPosition(rightTransform.up * finalForce, rightTransform.position);
 		}
 
-		/// <summary>
-		/// Call it after change/set the vehicle wheels to update the vehicle physics control.
-		/// </summary>
-		public virtual void UpdateWheelsData()
-		{
-		}
-
-		/// <summary>
-		/// Returns an wheel data from the vehicle.
-		/// </summary>
-		/// <param name="index"></param>
-		/// <returns></returns>
-		public WheelData GetWheel(int index)
-		{
-			if (index < 0 || index > WheelsData.Length - 1)
-			{
-				Debug.LogError($"Invalid wheel index: {index}");
-				return null;
-			}
-
-			return WheelsData[index];
-		}
-
-		/// <summary>
-		/// Try align the vehicle on ground normal, works only if the <see cref="IsGrounded"/> is true.
-		/// </summary>
-		/// <param name="alignmentSpeed">The speed to align the vehicle.</param>
-		protected void SimulateGroundAlignment(float alignmentSpeed)
-		{
-			if (!IsGrounded)
-				return;
-
-			AlignVehicleToNormal(WheelsUpDirection, alignmentSpeed);
-		}
-
-		/// <summary>
-		/// Align the vehicle to a normal direction.
-		/// </summary>
-		/// <param name="Normal">The normal to align</param>
-		/// <param name="alignmentSpeed"></param>
-		protected void AlignVehicleToNormal(Vector3 Normal, float alignmentSpeed)
-		{
-			float speed = Mathf.Clamp01(alignmentSpeed * Time.deltaTime);
-			transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.FromToRotation(transform.up, Normal) * transform.rotation, speed);
-		}
-
-		/// <summary>
-		/// Call it after change <seealso cref="EngineSettings.CenterOfMass"/>. <para/>
-		/// Update the vehicle <see cref="Rigidbody.centerOfMass"/>.
-		/// </summary>
-		public void UpdateCenterOfMass()
-		{
-			if (!RigidBody)
-				return;
-
-			RigidBody.centerOfMass = Engine.CenterOfMass;
-		}
-
-		/// <summary>
-		/// Draw debug gizmos.
-		/// </summary>
-		protected virtual void OnDrawGizmos()
-		{
-			Gizmos.color = Color.yellow;
-			Gizmos.DrawRay(transform.position, WheelsUpDirection);
-		}
-
-		[System.Serializable]
-		public class VehicleOverturnCheck
-		{
-			[Header("Overturn Check")]
-			public Vector3 CheckboxPosition = new Vector3(0, 1.5f, 0);
-			public Vector3 CheckboxScale = new Vector3(0.4f, 0.3f, 1.5f);
-			public LayerMask CheckboxLayerMask;
-
-			[Header("Anti-Overturn")]
-			public bool EnableAntiOverturn;
-			public float AntiOverturnSpeed = 1f;
-
-			[Header("State")]
-			public bool IsOverturned;
-
-			private RaycastHit GroundHit;
-
-			public void OverturnCheck(Transform vehicle)
-			{
-				Vector3 origin = vehicle.position + (vehicle.right * CheckboxPosition.x) + (vehicle.up * CheckboxPosition.y) + (vehicle.forward * CheckboxPosition.z);
-				var checkbox = Physics.OverlapBox(origin, CheckboxScale, vehicle.rotation, CheckboxLayerMask);
-				IsOverturned = (checkbox.Length != 0);
-			}
-			public void AntiOverturn(Transform vehicle)
-			{
-				if (!IsOverturned) return;
-				vehicle.rotation = Quaternion.Lerp(vehicle.rotation, Quaternion.FromToRotation(vehicle.up, GroundHit.normal) * vehicle.rotation, AntiOverturnSpeed * Time.deltaTime);
-			}
-		}
-
-		[System.Serializable]
-		public class VehicleOverlapBoxCheck
-		{
-			[Header("Overturn Check")]
-			public Vector3 CheckboxPosition = new Vector3(0, 0, 0);
-			public Vector3 CheckboxScale = new Vector3(0.4f, 0.4f, 0.4f);
-			public LayerMask CheckboxLayerMask;
-
-			[Header("State")]
-			public bool Collided;
-
-			private RaycastHit GroundHit;
-
-			public void Check(Transform vehicle)
-			{
-				Vector3 origin = vehicle.position + vehicle.right * CheckboxPosition.x + vehicle.up * CheckboxPosition.y + vehicle.forward * CheckboxPosition.z;
-				var checkbox = Physics.OverlapBox(origin, CheckboxScale, vehicle.rotation, CheckboxLayerMask);
-				Collided = (checkbox.Length != 0);
-				if (Collided) Debug.Log("collided");
-			}
-		}
-
-		[System.Serializable]
-		public class VehicleRaycastCheck
-		{
-			[Header("Raycast Check")]
-			public Vector3 OriginPosition = new Vector3(0, 0, 0);
-			public float RayMaxDistance = 1;
-			public LayerMask RayLayerMask;
-
-			[Header("State")]
-			public bool IsCollided;
-
-			public RaycastHit raycastHit;
-
-			public void Check(Transform vehicle, Vector3 direction)
-			{
-				Vector3 origin = vehicle.position + vehicle.right * OriginPosition.x + vehicle.up * OriginPosition.y + vehicle.forward * OriginPosition.z;
-				IsCollided = Physics.Raycast(origin, direction, out raycastHit, RayMaxDistance, RayLayerMask);
-			}
-		}
-
-
-
-		public static class VehicleGizmo
-		{
-			public static void DrawVector3Position(Vector3 position, Transform Vehicle, string Label = "", Color color = default(Color))
-			{
-				if (color != Color.clear)
-				{
-					Gizmos.color = color;
-				}
-
-				Vector3 wordlPosition = Vehicle.position + Vehicle.right * position.x + Vehicle.up * position.y + Vehicle.forward * position.z;
-				if (Label != "")
-				{
 #if UNITY_EDITOR
-					UnityEditor.Handles.Label(wordlPosition + Vector3.up * 0.1f, Label);
-#endif
-				}
-				Gizmos.DrawSphere(wordlPosition, 0.03f);
-			}
-			public static void DrawVehicleInclination(Transform RotationParent, Transform RotationChild)
+		private void OnExitPlayMode(UnityEditor.PlayModeStateChange change)
+		{
+			if (change == UnityEditor.PlayModeStateChange.ExitingPlayMode)
 			{
-				if (RotationChild == null || RotationParent == null) return;
-
-				//Points
-				Vector3 pos1 = RotationParent.position + RotationParent.up;
-				Vector3 pos2 = RotationChild.position + RotationChild.up;
-
-				Gizmos.color = Color.white;
-				Gizmos.DrawWireSphere(pos1, 0.01f);
-				Gizmos.color = Color.white;
-				Gizmos.DrawWireSphere(pos2, 0.01f);
-
-				//Base
-				Gizmos.color = Color.grey;
-				Gizmos.DrawRay(RotationParent.position, RotationParent.up);
-
-				//Real rotation
-				Gizmos.color = Color.green;
-				Gizmos.DrawRay(RotationChild.position, RotationChild.up);
-#if UNITY_EDITOR
-
-				//Infos
-				UnityEditor.Handles.Label(RotationParent.position + RotationChild.up * 1.2f, Vector3.Angle(RotationChild.up, RotationParent.up).ToString("00.0"));
+				UnityEditor.EditorApplication.playModeStateChanged -= OnExitPlayMode;
+				OnExitPlayMode();
+			}
+		}
 #endif
 
-				//Base Lines
-				Gizmos.color = Color.green;
-				Gizmos.DrawLine(RotationParent.position - RotationParent.right, RotationParent.position + RotationParent.right);
-#if UNITY_EDITOR
+		/// <summary>
+		/// Called by editor during exit play mode.
+		/// Useful to reset properties if reload domain is disabled on editor side.
+		/// </summary>
+		protected virtual void OnExitPlayMode()
+		{
+			_horizontal = 0;
+			_vertical = 0;
 
-				//Disc
-				UnityEditor.Handles.color = Color.green;
-				UnityEditor.Handles.DrawWireArc(RotationParent.position, RotationParent.forward, RotationParent.right, 180, 1);
-#endif
-			}
-			public static void DrawRaycastHit(Vehicle.VehicleRaycastCheck rayCheck, Transform vehicle, Vector3 direction)
+			if (PlayerInputs)
 			{
-				Gizmos.color = rayCheck.IsCollided ? Color.green : Color.red;
-
-				Vector3 origin = vehicle.position + vehicle.right * rayCheck.OriginPosition.x + vehicle.up * rayCheck.OriginPosition.y + vehicle.forward * rayCheck.OriginPosition.z;
-
-				Gizmos.DrawLine(origin, rayCheck.IsCollided ? rayCheck.raycastHit.point : origin + direction * rayCheck.RayMaxDistance);
-			}
-			public static void DrawOverturnCheck(Vehicle.VehicleOverturnCheck OverturnCheck, Transform Vehicle)
-			{
-				if (OverturnCheck.EnableAntiOverturn)
-				{
-					Gizmos.matrix = Matrix4x4.TRS(Vehicle.position, Vehicle.rotation, Vehicle.localScale);
-					Gizmos.color = OverturnCheck.IsOverturned ? Color.green : Color.red;
-					Gizmos.DrawWireCube(Vector3.zero + Vector3.up * OverturnCheck.CheckboxPosition.y + Vector3.right * OverturnCheck.CheckboxPosition.x + Vector3.forward * OverturnCheck.CheckboxPosition.z, OverturnCheck.CheckboxScale);
-				}
-			}
-			public static void DrawOverlapBoxCheck(Vehicle.VehicleOverlapBoxCheck BoxCheck, Transform Vehicle)
-			{
-				Gizmos.matrix = Matrix4x4.TRS(Vehicle.position, Vehicle.rotation, Vehicle.localScale);
-				Gizmos.color = BoxCheck.Collided ? Color.green : Color.red;
-				Gizmos.DrawWireCube(Vector3.zero + Vector3.up * BoxCheck.CheckboxPosition.y + Vector3.right * BoxCheck.CheckboxPosition.x + Vector3.forward * BoxCheck.CheckboxPosition.z, BoxCheck.CheckboxScale);
+				PlayerInputs.SetInputEnabled(false);
 			}
 		}
 	}

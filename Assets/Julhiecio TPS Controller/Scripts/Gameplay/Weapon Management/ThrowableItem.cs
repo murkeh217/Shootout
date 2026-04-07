@@ -9,6 +9,7 @@ namespace JUTPS.ItemSystem
     public class ThrowableItem : JUHoldableItem
     {
         [JUHeader("Throw Settings")]
+        public GameObject ActiveOnThrow;
         public string AnimationTriggerParameterName = "Throw";
         public float ThrowForce = 10, ThrowUpForce = 10, RotationForce = 10;
         //public float ItemMass;
@@ -16,7 +17,16 @@ namespace JUTPS.ItemSystem
         public Vector3 PositionToThrow = new Vector3(0, 1, 0.8f);
         public Vector3 DirectionToThrow = Vector3.forward;
 
-        [HideInInspector] public bool IsThrowed = false;
+        public bool IsThrowed { get; private set; }
+
+        protected override void Start()
+        {
+            base.Start();
+
+            if (ActiveOnThrow && IsThrowed)
+                ActiveOnThrow.SetActive(true);
+        }
+
         public override void UseItem()
         {
             if (ItemQuantity <= 0 || CanUseItem == false || IsThrowed == true) return;

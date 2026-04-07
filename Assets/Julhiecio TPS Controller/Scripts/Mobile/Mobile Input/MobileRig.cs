@@ -1,650 +1,380 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using JUTPS.JUInputSystem;
-using JUTPS.CrossPlataform;
+﻿using UnityEngine;
+using JU.Mobile;
+using JUTPS.InteractionSystem;
 using JUTPS.ActionScripts;
-using JUTPS.VehicleSystem;
-using System.Xml.Schema;
-
-
-
+using JUTPS.CoverSystem;
 
 
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace JUTPS.CrossPlataform
+namespace JUTPS.UI
 {
-
     public class MobileRig : MonoBehaviour
     {
+        /// <summary>
+        /// Contains mobile controls for character controllers.
+        /// </summary>
+        [System.Serializable]
+        public struct CharacterControlsSettings
+        {
+            /// <summary>
+            /// Show the <see cref="ShotButton"/> only if is holding an item?
+            /// </summary>
+            public bool ShowShotButtonIfHaveItem;
+
+            /// <summary>
+            /// The shot button.
+            /// </summary>
+            public JUButtonVirtual ShotButton;
+
+            /// <summary>
+            /// The punch button.
+            /// </summary>
+            public JUButtonVirtual PunchButton;
+
+            /// <summary>
+            /// The aim button.
+            /// </summary>
+            public JUButtonVirtual AimingButton;
+
+            /// <summary>
+            /// The reload button.
+            /// </summary>
+            public JUButtonVirtual ReloadButton;
+
+            /// <summary>
+            /// The interaction button.
+            /// </summary>
+            public JUButtonVirtual InteractButton;
+
+            /// <summary>
+            /// The enter/exit vehicle button.
+            /// </summary>
+            public JUButtonVirtual EnterVehicleButton;
+        }
+
+        /// <summary>
+        /// The container that contains all mobile controls.
+        /// </summary>
         [Header("Panels")]
         public GameObject MobileScreenPanel;
-        public GameObject NormalScreenPanel;
-        public GameObject DrivingScreenPanel;
 
-        [Header("Joysticks")]
-        [SerializeField] private JoystickVirtual MovementJoystick;
-        [SerializeField] private JoystickVirtual RightJoystick;
-        [SerializeField] private bool RightJoystickIsShootInput = true;
-        [SerializeField] private float RightJoystickShotSensibility = 0.5f;
-        private bool PressedRightJoystickDown;
-        [Header("Touch Fields")]
-        [SerializeField] private Touchfield RotateCameraTouchfield;
-        [SerializeField] private Touchfield ShotButtonTouchfield;
+        /// <summary>
+        /// The container that contains only mobile controls for characters.
+        /// </summary>
+        public GameObject CharacterControlsPanel;
 
-        [Header("Buttons")]
-        public bool ShowShotButtonOnlyUsingItem;
-        [SerializeField] private ButtonVirtual ShotButton;
-        [SerializeField]
-        private ButtonVirtual AimingButton, ReloadButton, RunButton, RunButtonRight, JumpButton,
-        CrouchButton, RollButton, PickItemButton, EnterVehicleButton, NextWeaponButton, PreviousWeaponButton, RightButton, LeftButton, ForwardButton, BackButton, BrakeButton;
-        public void FindButtonsAndTouches()
+        /// <summary>
+        /// The container that contains only mobile controls for vehicles.
+        /// </summary>
+        public GameObject VehicleControlsPanel;
+
+        /// <summary>
+        /// Contains mobile controls for character controllers.
+        /// </summary>
+        public CharacterControlsSettings CharacterControls;
+
+        public MobileRig()
+        {
+            CharacterControls = new CharacterControlsSettings();
+            CharacterControls.ShowShotButtonIfHaveItem = true;
+        }
+
+        internal void FindButtonsAndTouches()
         {
             //Screen Panels
-            MobileScreenPanel = GameObject.Find("Mobile Screen");
-            NormalScreenPanel = GameObject.Find("Normal Mobile Screen Panel");
-            DrivingScreenPanel = GameObject.Find("Driving Mobile Screen Panel");
 
-            //Touchfields
-            RotateCameraTouchfield = GameObject.Find("Rotate Camera Touchfield").GetComponent<Touchfield>();
-            ShotButtonTouchfield = GameObject.Find("ShotButton").GetComponent<Touchfield>();
+            MobileScreenPanel = FindGameObject(new string[]
+            {
+                "Mobile Screen",
+                "MobileScreen",
+                "Mobile",
+                "Screen Mobile",
+                "ScreenMobile",
+                "mobile screen",
+                "mobileScreen",
+                "mobile",
+                "screen mobile",
+                "screenMobile",
+            });
+
+            CharacterControlsPanel = FindGameObject(new string[]
+            {
+                "Mobile Character Controls",
+                "Mobile Character",
+                "Normal Mobile Screen",
+                "Normal Mobile Screen Panel",
+                "Character Mobile Controls",
+                "Character Controls Mobile",
+                "mobile character controls",
+                "mobile character",
+                "normal mobile screen",
+                "normal mobile screen panel",
+                "character mobile controls",
+                "character controls mobile",
+            });
+
+            VehicleControlsPanel = FindGameObject(new string[]
+            {
+                "Vehicle Mobile Screen",
+                "Vehicle Mobile Controls",
+                "Vehicle Controls Mobile",
+                "Driving Mobile screen",
+                "Driving Mobile Screen Panel",
+                "vehicle mobile screen",
+                "vehicle mobile controls",
+                "vehicle controls mobile",
+                "driving mobile screen",
+                "driving mobile Screen panel"
+            });
 
             //Controll Buttons
-            MovementJoystick = GameObject.Find("Joystick").GetComponent<JoystickVirtual>();
-            ShotButton = GameObject.Find("ShotButton").GetComponent<ButtonVirtual>();
-            AimingButton = GameObject.Find("AimingButton").GetComponent<ButtonVirtual>();
-            JumpButton = GameObject.Find("JumpButton").GetComponent<ButtonVirtual>();
-            RunButton = GameObject.Find("RunButton").GetComponent<ButtonVirtual>();
-            RunButtonRight = GameObject.Find("RightRunButton").GetComponent<ButtonVirtual>();
-            RollButton = GameObject.Find("RollButton").GetComponent<ButtonVirtual>();
-            CrouchButton = GameObject.Find("CrouchButton").GetComponent<ButtonVirtual>();
-            ReloadButton = GameObject.Find("ReloadButton").GetComponent<ButtonVirtual>();
+
+            CharacterControls.ShotButton = FindComponent<JUButtonVirtual>(new string[]
+             {
+                "Shot",
+                "ShotButton",
+                "Shot Button",
+                "Button Shot",
+                "Shooting",
+                "Shooting Button",
+                "ShootingButton",
+                "Shoot Button",
+                "ShotButton",
+                "Button Shoot",
+                "ShootButton",
+                "shot",
+                "shotButton",
+                "shot button",
+                "button shot",
+                "shooting",
+                "shooting button",
+                "shootingbutton",
+                "shoot button",
+                "shootButton",
+                "button shoot",
+                "shootButton",
+             });
+
+            CharacterControls.PunchButton = FindComponent<JUButtonVirtual>(new string[]
+              {
+                "Punch",
+                "PunchButton",
+                "Punch Button",
+                "Button Punch",
+                "punch button",
+                "punchButton",
+                "button punch",
+                "punch",
+              });
+
+            CharacterControls.AimingButton = FindComponent<JUButtonVirtual>(new string[]
+            {
+                "Aiming",
+                "AimingButton",
+                "Aiming Button",
+                "Aim Button",
+                "AimButton",
+                "Button Aim",
+                "ButtonAim",
+                "aimingButton",
+                "aiming button",
+                "button aim",
+                "buttonAim",
+                "aim",
+            });
+
+            CharacterControls.ReloadButton = FindComponent<JUButtonVirtual>(new string[]
+            {
+                "Reload",
+                "ReloadButton",
+                "Reload Button",
+                "Button Reload",
+                "reload",
+                "reloadButton",
+                "reload button",
+                "button reload"
+            });
 
             //Interact Buttons
-            PickItemButton = GameObject.Find("InteractButton").GetComponent<ButtonVirtual>();
-            EnterVehicleButton = GameObject.Find("Enter The Vehicle Button").GetComponent<ButtonVirtual>();
 
-            //Weapon Switch
-            PreviousWeaponButton = GameObject.Find("PreviousWeaponButton").GetComponent<ButtonVirtual>();
-            NextWeaponButton = GameObject.Find("NextWeaponButton").GetComponent<ButtonVirtual>();
+            CharacterControls.InteractButton = FindComponent<JUButtonVirtual>(new string[]
+            {
+                "Interact",
+                "InteractButton",
+                "Interact Button",
+                "Button Interact",
+                "interact",
+                "interact button",
+                "interactButton",
+                "button interact"
+            });
 
-            //Driving Buttons
-            RightButton = GameObject.Find("RightButton").GetComponent<ButtonVirtual>();
-            LeftButton = GameObject.Find("LeftButton").GetComponent<ButtonVirtual>();
-            ForwardButton = GameObject.Find("ForwardButton").GetComponent<ButtonVirtual>();
-            BackButton = GameObject.Find("BackButton").GetComponent<ButtonVirtual>();
-            BrakeButton = GameObject.Find("BrakeButton").GetComponent<ButtonVirtual>();
+            CharacterControls.EnterVehicleButton = FindComponent<JUButtonVirtual>(new string[]
+            {
+                "VehicleButton",
+                "Enter Vehicle",
+                "Enter Vehicle Button",
+                "Enter The Vehicle Button",
+                "Vehicle Button",
+                "enter vehicle",
+                "enter vehicle button",
+                "enter the vehicle button",
+                "vehicle button",
+            });
         }
+
+        private GameObject FindGameObject(string[] names)
+        {
+            for (int i = 0; i < names.Length; i++)
+            {
+                GameObject obj = GameObject.Find(names[i]);
+                if (obj)
+                {
+                    return obj;
+                }
+            }
+
+            return null;
+        }
+
+        private T FindComponent<T>(string[] names) where T : MonoBehaviour
+        {
+            for (int i = 0; i < names.Length; i++)
+            {
+                GameObject obj = GameObject.Find(names[i]);
+                if (obj)
+                {
+                    T component = obj.GetComponent<T>();
+                    if (component)
+                    {
+                        return component;
+                    }
+                }
+            }
+
+            return null;
+        }
+
         private void Update()
         {
             if (JUGameManager.IsMobileControls)
             {
-                //Controls mobile screens and buttons that are not seen all the time, for example the get-in-car button.
-                UpdateMobileScreen();
+                MobileScreenPanel.SetActive(true);
+                UpdateMobileScreens();
                 UpdateMobileButtons();
-
-                //Block Default Inputs
-                if (JUInput.Instance().IsBlockingDefaultInputs == false)
-                {
-                    JUInput.Instance().EnableBlockStandardInputs();
-                }
-
-                //Rewrite Inputs Value
-                RewriteGetButtonDown();
-                RewriteGetButtonUp();
-                RewriteGetButton();
-                RewriteAxis();
             }
             else
             {
                 MobileScreenPanel.SetActive(false);
-
-                if (JUInput.Instance().IsBlockingDefaultInputs == true) { JUInput.Instance().DisableBlockStandardInputs(); }
             }
         }
 
-
-        //Mobile Screens
-        private void UpdateMobileScreen()
+        private void UpdateMobileScreens()
         {
-            if (!JUGameManager.IsMobileControls) { MobileScreenPanel.SetActive(false); return; }
-
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+
             MobileScreenPanel.SetActive(JUGameManager.IsMobileControls);
-            NormalScreenPanel.SetActive(!JUGameManager.PlayerController.IsDriving);
-            DrivingScreenPanel.SetActive(JUGameManager.PlayerController.IsDriving);
+            CharacterControlsPanel.SetActive(!JUGameManager.PlayerController.IsDriving);
+            VehicleControlsPanel.SetActive(JUGameManager.PlayerController.IsDriving);
         }
 
-        //Update Buttons On Screen View
         private void UpdateMobileButtons()
         {
-            if (PickItemButton != null)
+            if (CharacterControls.InteractButton)
             {
-                PickItemButton.gameObject.SetActive(JUGameManager.PlayerController.Inventory != null ? JUGameManager.PlayerController.Inventory.ItemToPickUp : false);
+                bool showButton = JUGameManager.PlayerController.Inventory && JUGameManager.PlayerController.Inventory.ItemToPickUp;
+                if (!showButton && JUGameManager.PlayerController.TryGetComponent(out JUCoverController cover))
+                {
+                    if (cover && cover.CurrentCoverTrigger && !cover.IsCovering)
+                    {
+                        showButton = true;
+                    }
+                }
+
+                CharacterControls.InteractButton.gameObject.SetActive(showButton);
             }
 
-            if (ReloadButton != null) ReloadButton.gameObject.SetActive((JUGameManager.PlayerController.WeaponInUseRightHand != null ||
-                                               JUGameManager.PlayerController.WeaponInUseLeftHand != null) ? true : false);
+            if (CharacterControls.ReloadButton)
+            {
+                bool showButton = JUGameManager.PlayerController.RightHandWeapon || JUGameManager.PlayerController.LeftHandWeapon;
+                CharacterControls.ReloadButton.gameObject.SetActive(showButton);
+            }
 
-            if (AimingButton != null) AimingButton.gameObject.SetActive((JUGameManager.PlayerController.WeaponInUseRightHand != null) ? true : false);
+            if (CharacterControls.AimingButton)
+            {
+                bool showButton = JUGameManager.PlayerController.RightHandWeapon;
+                CharacterControls.AimingButton.gameObject.SetActive(showButton);
+            }
 
-            if (ShotButton != null) ShotButton.gameObject.SetActive(ShowShotButtonOnlyUsingItem ? JUGameManager.PlayerController.IsItemEquiped : true);
+            if (CharacterControls.ShotButton)
+            {
+                bool showButton = CharacterControls.ShowShotButtonIfHaveItem ? JUGameManager.PlayerController.IsItemEquiped : true;
+                CharacterControls.ShotButton.gameObject.SetActive(showButton);
+            }
+            if (CharacterControls.PunchButton)
+            {
+                bool showButton = true;
 
-            if (JUGameManager.PlayerController.TryGetComponent<DriveVehicles>(out var driver))
+                if (CharacterControls.ShotButton && CharacterControls.ShotButton.gameObject.activeSelf)
+                {
+                    showButton = false;
+                }
+
+                CharacterControls.PunchButton.gameObject.SetActive(showButton);
+            }
+
+            // Enter/Exit vehicle button.
+            if (CharacterControls.EnterVehicleButton && JUGameManager.PlayerController.TryGetComponent<DriveVehicles>(out var driver))
             {
                 if (driver.IsDriving)
                 {
-                    EnterVehicleButton.gameObject.SetActive(driver.CanExitVehicle);
+                    CharacterControls.EnterVehicleButton.gameObject.SetActive(driver.CanExitVehicle);
                 }
                 else
                 {
-                    Vehicle nearestVehicle = driver.NearestVehicle;
-                    JUVehicleCharacterIK nearesVehicleCharacterIK = driver.NearestVehicleCharacterIK;
-
-                    bool canDriveVehicle = nearestVehicle && driver.CanEnterVehicle;
-                    if (nearesVehicleCharacterIK)
-                        canDriveVehicle = !nearesVehicleCharacterIK.CharactersCanGetVehicle ? false : canDriveVehicle;
-
-                    EnterVehicleButton.gameObject.SetActive(canDriveVehicle);
+                    JUInteractionSystem interactionSystem = JUGameManager.PlayerController.GetComponent<JUInteractionSystem>();
+                    bool showButton = interactionSystem && interactionSystem.CanInteract(interactionSystem.NearestInteractable);
+                    CharacterControls.EnterVehicleButton.gameObject.SetActive(showButton);
                 }
             }
-            else
+            else if (CharacterControls.EnterVehicleButton)
             {
-                EnterVehicleButton.gameObject.SetActive(false);
+                CharacterControls.EnterVehicleButton.gameObject.SetActive(false);
             }
         }
-
-        //Rewrite all inputs
-        private void RewriteAxis()
-        {
-            // >>> Rewrite Joystick Movement Vector
-            if (MovementJoystick != null)
-            {
-                JUInput.RewriteInputAxis(JUInput.Axis.MoveHorizontal, Mathf.Clamp(MovementJoystick.Horizontal(), -1, 1));
-                JUInput.RewriteInputAxis(JUInput.Axis.MoveVertical, Mathf.Clamp(MovementJoystick.Vertical(), -1, 1));
-            }
-
-            // >>> Driving Screen Buttons Mapping
-            if (ForwardButton != null)
-            {
-                if (ForwardButton.IsPressed) JUInput.RewriteInputAxis(JUInput.Axis.MoveVertical, 1);
-            }
-            if (BackButton != null)
-            {
-                if (BackButton.IsPressed) JUInput.RewriteInputAxis(JUInput.Axis.MoveVertical, -1);
-            }
-            if (RightButton != null)
-            {
-                if (RightButton.IsPressed) JUInput.RewriteInputAxis(JUInput.Axis.MoveHorizontal, 1);
-            }
-            if (LeftButton != null)
-            {
-                if (LeftButton.IsPressed) JUInput.RewriteInputAxis(JUInput.Axis.MoveHorizontal, -1);
-            }
-
-            //Rotate Screen
-            if (JUGameManager.IsMobileControls && RotateCameraTouchfield != null)
-            {
-                if (RightJoystick == null)
-                {
-                    if (ShotButtonTouchfield != null)
-                    {
-                        JUInput.RewriteInputAxis(JUInput.Axis.RotateHorizontal, RotateCameraTouchfield.TouchDistance.x / 5 + ShotButtonTouchfield.TouchDistance.x / 5);
-                        JUInput.RewriteInputAxis(JUInput.Axis.RotateVertical, RotateCameraTouchfield.TouchDistance.y / 5 + ShotButtonTouchfield.TouchDistance.y / 5);
-                    }
-                    else
-                    {
-                        JUInput.RewriteInputAxis(JUInput.Axis.RotateHorizontal, RotateCameraTouchfield.TouchDistance.x / 5);
-                        JUInput.RewriteInputAxis(JUInput.Axis.RotateVertical, RotateCameraTouchfield.TouchDistance.y / 5);
-                    }
-                }
-                else
-                {
-                    JUInput.RewriteInputAxis(JUInput.Axis.RotateHorizontal, Mathf.Clamp(RightJoystick.Horizontal(), -1, 1));
-                    JUInput.RewriteInputAxis(JUInput.Axis.RotateVertical, Mathf.Clamp(RightJoystick.Vertical(), -1, 1));
-                }
-            }
-        }
-        private void RewriteGetButtonDown()
-        {
-            // >>> Get Button Down
-
-
-            if (ShotButton != null) JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.ShotButton, ShotButton.IsPressedDown);
-
-            if (AimingButton != null) JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.AimingButton, AimingButton.IsPressedDown);
-
-            if (RightJoystick != null && RightJoystickIsShootInput)
-            {
-                //Rewrite Button Down
-                if (PressedRightJoystickDown == false)
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.ShotButton, RightJoystick.IsPressed);
-                    PressedRightJoystickDown = true;
-                }
-
-                //Reset State
-                if (RightJoystick.IsPressed == false && PressedRightJoystickDown == true) PressedRightJoystickDown = false;
-            }
-
-
-            if (JumpButton != null)
-            {
-                if (JumpButton.IsPressedDown)
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.JumpButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.JumpButton, false);
-                }
-            }
-
-            if (RunButton != null)
-            {
-                if (RunButton.IsPressedDown || RunButtonRight.IsPressedDown)
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.RunButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.RunButton, false);
-                }
-            }
-
-
-            if (RollButton != null)
-            {
-                if (RollButton.IsPressedDown)
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.RollButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.RollButton, false);
-                }
-            }
-
-
-            if (CrouchButton != null)
-            {
-                if (CrouchButton.IsPressedDown)
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.CrouchButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.CrouchButton, false);
-                }
-            }
-
-
-            if (ReloadButton != null)
-            {
-                if (ReloadButton.IsPressedDown)
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.ReloadButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.ReloadButton, false);
-                }
-            }
-
-
-            if (PickItemButton != null)
-            {
-                if (PickItemButton.IsPressedDown)
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.PickupButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.PickupButton, false);
-                }
-            }
-
-
-            if (EnterVehicleButton != null)
-            {
-                if (EnterVehicleButton.IsPressedDown)
-                {
-                    if (JUGameManager.PlayerController.TryGetComponent<DriveVehicles>(out var driveVehicles))
-                    {
-                        if (driveVehicles.IsDriving) driveVehicles.ExitVehicle();
-                        else driveVehicles.TryDriveNearestVehicle();
-                    }
-                }
-            }
-
-            if (NextWeaponButton != null)
-            {
-                if (NextWeaponButton.IsPressedDown)
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.NextWeaponButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.NextWeaponButton, false);
-                }
-            }
-
-
-            if (PreviousWeaponButton != null)
-            {
-                if (PreviousWeaponButton.IsPressedDown)
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.PreviousWeaponButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedDown(JUInput.Buttons.PreviousWeaponButton, false);
-                }
-            }
-        }
-        private void RewriteGetButton()
-        {
-            // >>> Get Button Down
-
-
-            if (RightJoystick == null)
-            {
-                if (ShotButton != null) JUInput.RewriteInputButtonPressed(JUInput.Buttons.ShotButton, ShotButton.IsPressed);
-            }
-            else
-            {
-                if (ShotButton != null && RightJoystickIsShootInput == false)
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.ShotButton, ShotButton.IsPressed);
-                }
-                if (RightJoystickIsShootInput == true && RightJoystick != null)
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.ShotButton, RightJoystick.Intensity > RightJoystickShotSensibility);
-                }
-            }
-
-            if (AimingButton != null) { JUInput.RewriteInputButtonPressed(JUInput.Buttons.AimingButton, AimingButton.IsPressed); }
-
-
-            if (JumpButton != null)
-            {
-                if (JumpButton.IsPressed)
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.JumpButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.JumpButton, false);
-                }
-
-            }
-
-            if (BrakeButton != null && DrivingScreenPanel.activeInHierarchy == true)
-            {
-                if (BrakeButton.IsPressed)
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.JumpButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.JumpButton, false);
-                }
-            }
-
-            if (RunButton != null)
-            {
-                if (RunButton.IsPressed || RunButtonRight.IsPressed)
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.RunButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.RunButton, false);
-                }
-            }
-
-
-            if (RollButton != null)
-            {
-                if (RollButton.IsPressed)
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.RollButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.RollButton, false);
-                }
-            }
-
-
-            if (CrouchButton != null)
-            {
-                if (CrouchButton.IsPressed)
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.CrouchButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.CrouchButton, false);
-                }
-            }
-
-
-            if (ReloadButton != null)
-            {
-                if (ReloadButton.IsPressed)
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.ReloadButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.ReloadButton, false);
-                }
-            }
-
-
-            if (PickItemButton != null)
-            {
-                if (PickItemButton.IsPressed)
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.PickupButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.PickupButton, false);
-                }
-            }
-
-
-            if (EnterVehicleButton != null)
-            {
-                if (EnterVehicleButton.IsPressed)
-                    if (JUGameManager.PlayerController.TryGetComponent<DriveVehicles>(out var driveVehicles))
-                    {
-                        if (driveVehicles.IsDriving) driveVehicles.ExitVehicle();
-                        else driveVehicles.TryDriveNearestVehicle();
-                    }
-            }
-
-
-            if (NextWeaponButton != null)
-            {
-                if (NextWeaponButton.IsPressed)
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.NextWeaponButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.NextWeaponButton, false);
-                }
-            }
-
-
-            if (PreviousWeaponButton != null)
-            {
-                if (PreviousWeaponButton.IsPressed)
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.PreviousWeaponButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressed(JUInput.Buttons.PreviousWeaponButton, false);
-                }
-            }
-        }
-        private void RewriteGetButtonUp()
-        {
-            // >>> Get Button Up
-
-            if (JUGameManager.IsMobileControls)
-            {
-                if (ShotButton != null)
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.ShotButton, ShotButton.IsPressedUp);
-                if (AimingButton != null)
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.AimingButton, AimingButton.IsPressedUp);
-            }
-
-            if (JumpButton != null)
-            {
-                if (JumpButton.IsPressedUp)
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.JumpButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.JumpButton, false);
-                }
-            }
-
-            if (RunButton != null)
-            {
-                if (RunButton.IsPressedUp || RunButtonRight.IsPressedUp)
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.RunButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.RunButton, false);
-                }
-            }
-
-
-            if (RollButton != null)
-            {
-                if (RollButton.IsPressedUp)
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.RollButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.RollButton, false);
-                }
-            }
-
-
-            if (CrouchButton != null)
-            {
-                if (CrouchButton.IsPressedUp)
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.CrouchButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.CrouchButton, false);
-                }
-            }
-
-
-            if (ReloadButton != null)
-            {
-                if (ReloadButton.IsPressedUp)
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.ReloadButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.ReloadButton, false);
-                }
-            }
-
-
-            if (PickItemButton != null)
-            {
-                if (PickItemButton.IsPressedUp)
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.PickupButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.PickupButton, false);
-                }
-            }
-
-
-            if (EnterVehicleButton != null)
-            {
-                if (EnterVehicleButton.IsPressedUp)
-                    if (JUGameManager.PlayerController.TryGetComponent<DriveVehicles>(out var driveVehicles))
-                    {
-                        if (driveVehicles.IsDriving) driveVehicles.ExitVehicle();
-                        else driveVehicles.TryDriveNearestVehicle();
-                    }
-            }
-
-            if (NextWeaponButton != null)
-            {
-                if (NextWeaponButton.IsPressedUp)
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.NextWeaponButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.NextWeaponButton, false);
-                }
-            }
-
-
-            if (PreviousWeaponButton != null)
-            {
-                if (PreviousWeaponButton.IsPressedUp)
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.PreviousWeaponButton, true);
-                }
-                else
-                {
-                    JUInput.RewriteInputButtonPressedUp(JUInput.Buttons.PreviousWeaponButton, false);
-                }
-            }
-        }
-
     }
-
 }
 
 namespace JUTPS.CustomEditors
 {
 #if UNITY_EDITOR
+    using MobileRig = JUTPS.UI.MobileRig;
+
+    /// <summary>
+    /// Custom editor for <see cref="MobileRig"/>.
+    /// </summary>
     [CustomEditor(typeof(MobileRig))]
     public class MobileRigEditor : Editor
     {
         private static readonly string[] _dontIncludeMe = new string[] { "m_Script" };
 
+        /// <inheritdoc/>
         public override void OnInspectorGUI()
         {
-            MobileRig tg = (MobileRig)target;
+            MobileRig mobileRig = (MobileRig)target;
 
             serializedObject.Update();
 
             if (GUILayout.Button(" ► Auto Setup", GUILayout.Height(30)))
             {
-                tg.FindButtonsAndTouches();
+                mobileRig.FindButtonsAndTouches();
+                EditorUtility.SetDirty(mobileRig);
             }
             DrawPropertiesExcluding(serializedObject, _dontIncludeMe);
-
             serializedObject.ApplyModifiedProperties();
         }
     }

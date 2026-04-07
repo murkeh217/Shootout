@@ -168,8 +168,12 @@ namespace JUTPS.CameraSystems
 			mCamera = gameObject.GetComponentInChildren<Camera>();
 
 			//Find player
-			GameObject player = GameObject.FindGameObjectWithTag("Player");
-			if (TargetToFollow == null && player != null) { TargetToFollow = player.transform; }
+
+			if (TargetToFollow == null)
+			{
+				GameObject player = GameObject.FindGameObjectWithTag("Player");
+				TargetToFollow = player.transform;
+			}
 			//Set Start Rotation
 			if (TargetToFollow != null) { SetCameraRotation(0, TargetToFollow.eulerAngles.y, false); }
 
@@ -200,49 +204,50 @@ namespace JUTPS.CameraSystems
 		/// <param name="lerp">If true, it will make a smooth transition, if not, a linear transition</param>
 		public void SetCameraStateTransition(CameraState current, CameraState target, float speed = 8, bool lerp = true)
 		{
+			speed = Mathf.Clamp01(speed * Time.deltaTime);
 			if (speed != -1)
 			{
 				switch (lerp)
 				{
 					case true:
-						current.Distance = Mathf.Lerp(current.Distance, target.Distance, speed * Time.deltaTime);
-						current.MovementSpeed = Mathf.Lerp(current.MovementSpeed, target.MovementSpeed, speed * Time.deltaTime);
+						current.Distance = Mathf.Lerp(current.Distance, target.Distance, speed);
+						current.MovementSpeed = Mathf.Lerp(current.MovementSpeed, target.MovementSpeed, speed);
 
-						current.UpTargetOffset = Mathf.Lerp(current.UpTargetOffset, target.UpTargetOffset, speed * Time.deltaTime);
-						current.ForwardTargetOffset = Mathf.Lerp(current.ForwardTargetOffset, target.ForwardTargetOffset, speed * Time.deltaTime);
-						current.RightTargetOffset = Mathf.Lerp(current.RightTargetOffset, target.RightTargetOffset, speed * Time.deltaTime);
+						current.UpTargetOffset = Mathf.Lerp(current.UpTargetOffset, target.UpTargetOffset, speed);
+						current.ForwardTargetOffset = Mathf.Lerp(current.ForwardTargetOffset, target.ForwardTargetOffset, speed);
+						current.RightTargetOffset = Mathf.Lerp(current.RightTargetOffset, target.RightTargetOffset, speed);
 
-						current.CameraFieldOfView = Mathf.Lerp(current.CameraFieldOfView, target.CameraFieldOfView, speed * Time.deltaTime);
+						current.CameraFieldOfView = Mathf.Lerp(current.CameraFieldOfView, target.CameraFieldOfView, speed);
 
-						current.RightCameraOffset = Mathf.Lerp(current.RightCameraOffset, target.RightCameraOffset, speed * Time.deltaTime);
-						current.UpCameraOffset = Mathf.Lerp(current.UpCameraOffset, target.UpCameraOffset, speed * Time.deltaTime);
-						current.ForwardCameraOffset = Mathf.Lerp(current.ForwardCameraOffset, target.ForwardCameraOffset, speed * Time.deltaTime);
+						current.RightCameraOffset = Mathf.Lerp(current.RightCameraOffset, target.RightCameraOffset, speed);
+						current.UpCameraOffset = Mathf.Lerp(current.UpCameraOffset, target.UpCameraOffset, speed);
+						current.ForwardCameraOffset = Mathf.Lerp(current.ForwardCameraOffset, target.ForwardCameraOffset, speed);
 
-						current.RotationSensibility = Mathf.Lerp(current.RotationSensibility, target.RotationSensibility, speed * Time.deltaTime);
-						current.VerticalRotationSensibility = Mathf.Lerp(current.VerticalRotationSensibility, target.VerticalRotationSensibility, speed * Time.deltaTime);
+						current.RotationSensibility = Mathf.Lerp(current.RotationSensibility, target.RotationSensibility, speed);
+						current.VerticalRotationSensibility = Mathf.Lerp(current.VerticalRotationSensibility, target.VerticalRotationSensibility, speed);
 
-						current.MaxRotation = Mathf.Lerp(current.MaxRotation, target.MaxRotation, speed * Time.deltaTime);
-						current.MinRotation = Mathf.Lerp(current.MinRotation, target.MinRotation, speed * Time.deltaTime);
+						current.MaxRotation = Mathf.Lerp(current.MaxRotation, target.MaxRotation, speed);
+						current.MinRotation = Mathf.Lerp(current.MinRotation, target.MinRotation, speed);
 						break;
 					case false:
-						current.Distance = Mathf.MoveTowards(current.Distance, target.Distance, speed * Time.deltaTime);
-						current.MovementSpeed = Mathf.MoveTowards(current.MovementSpeed, target.MovementSpeed, speed * Time.deltaTime);
+						current.Distance = Mathf.MoveTowards(current.Distance, target.Distance, speed);
+						current.MovementSpeed = Mathf.MoveTowards(current.MovementSpeed, target.MovementSpeed, speed);
 
-						current.UpTargetOffset = Mathf.MoveTowards(current.UpTargetOffset, target.UpTargetOffset, speed * Time.deltaTime);
-						current.ForwardTargetOffset = Mathf.MoveTowards(current.ForwardTargetOffset, target.ForwardTargetOffset, speed * Time.deltaTime);
-						current.RightTargetOffset = Mathf.MoveTowards(current.RightTargetOffset, target.RightTargetOffset, speed * Time.deltaTime);
+						current.UpTargetOffset = Mathf.MoveTowards(current.UpTargetOffset, target.UpTargetOffset, speed);
+						current.ForwardTargetOffset = Mathf.MoveTowards(current.ForwardTargetOffset, target.ForwardTargetOffset, speed);
+						current.RightTargetOffset = Mathf.MoveTowards(current.RightTargetOffset, target.RightTargetOffset, speed);
 
-						current.CameraFieldOfView = Mathf.MoveTowards(current.CameraFieldOfView, target.CameraFieldOfView, speed * Time.deltaTime);
+						current.CameraFieldOfView = Mathf.MoveTowards(current.CameraFieldOfView, target.CameraFieldOfView, speed);
 
-						current.RightCameraOffset = Mathf.MoveTowards(current.RightCameraOffset, target.RightCameraOffset, speed * Time.deltaTime);
-						current.UpCameraOffset = Mathf.MoveTowards(current.UpCameraOffset, target.UpCameraOffset, speed * Time.deltaTime);
-						current.ForwardCameraOffset = Mathf.MoveTowards(current.ForwardCameraOffset, target.ForwardCameraOffset, speed * Time.deltaTime);
+						current.RightCameraOffset = Mathf.MoveTowards(current.RightCameraOffset, target.RightCameraOffset, speed);
+						current.UpCameraOffset = Mathf.MoveTowards(current.UpCameraOffset, target.UpCameraOffset, speed);
+						current.ForwardCameraOffset = Mathf.MoveTowards(current.ForwardCameraOffset, target.ForwardCameraOffset, speed);
 
-						current.RotationSensibility = Mathf.MoveTowards(current.RotationSensibility, target.RotationSensibility, speed * Time.deltaTime);
-						current.VerticalRotationSensibility = Mathf.MoveTowards(current.VerticalRotationSensibility, target.VerticalRotationSensibility, speed * Time.deltaTime);
+						current.RotationSensibility = Mathf.MoveTowards(current.RotationSensibility, target.RotationSensibility, speed);
+						current.VerticalRotationSensibility = Mathf.MoveTowards(current.VerticalRotationSensibility, target.VerticalRotationSensibility, speed);
 
-						current.MaxRotation = Mathf.MoveTowards(current.MaxRotation, target.MaxRotation, speed * Time.deltaTime);
-						current.MinRotation = Mathf.MoveTowards(current.MinRotation, target.MinRotation, speed * Time.deltaTime);
+						current.MaxRotation = Mathf.MoveTowards(current.MaxRotation, target.MaxRotation, speed);
+						current.MinRotation = Mathf.MoveTowards(current.MinRotation, target.MinRotation, speed);
 						break;
 				}
 			}

@@ -10,9 +10,10 @@ GameObject:
   m_Component:
   - component: {fileID: 8557534019242804672}
   - component: {fileID: 7998289783156108674}
+  - component: {fileID: 7950909762515718306}
   m_Layer: 2
   m_Name: VehicleArea
-  m_TagString: VehicleArea
+  m_TagString: Interactable
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -44,6 +45,22 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &7950909762515718306
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 411011516313871184}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d249b4cc7322e94183e92bc94d426c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  InteractionEnabled: 1
+  EnterExitVehicle:
+    MaxVehicleSpeedToEnter: 5
+    MaxCharacterSpeedToEnter: 5
 --- !u!1 &688772448986642230
 GameObject:
   m_ObjectHideFlags: 0
@@ -1079,7 +1096,7 @@ GameObject:
   - component: {fileID: 5671209466449822202}
   m_Layer: 8
   m_Name: Bike
-  m_TagString: Untagged
+  m_TagString: Vehicle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1149,7 +1166,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f525cccc7e16c92459a0618cb94ed903, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  UseDefaultInputs: 1
+  IsOn: 0
+  ControlsEnabled: 1
+  UsePlayerInputs: 1
+  PlayerInputs: {fileID: 11400000, guid: be455aa438e8dc04899a8578b3ce7ef1, type: 2}
   Engine:
     MaxForwardSpeed: 80
     MaxRearSpeed: 4
@@ -1213,8 +1233,6 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   RotateToUpInAirSpeed: 1
-  IsOn: 0
-  ControlsEnabled: 1
   FrontWheel:
     MaxSteerAngle: 35
     ThrottleIntensity: 0
@@ -1273,7 +1291,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57b76bb4d21f5654aae48bafd91b9a5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CharactersCanGetVehicle: 1
   CharacterExitingPosition: {x: -1, y: 0, z: 0}
   InverseKinematicTargetPositions:
     CharacterPosition: {fileID: 7363846584395405161}

@@ -1,16 +1,16 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using JUTPS.JUInputSystem;
+using System.Collections.Generic;
 using UnityEditor;
-
-using JUTPS.Utilities;
+using UnityEngine;
 
 namespace JUTPS.CustomEditors
 {
     [CustomEditor(typeof(JUCharacterController))]
     public class TPSControllerEditor : Editor
     {
+        private bool _isEquipItemSettingsOpen;
         private bool _isLocomotionSettingsOpen;
-        private bool _isRoundCheckSettingsOpen;
+        private bool _isGroundCheckSettingsOpen;
         private bool _isWallCheckSettingsOpen;
         private bool _isStepCorrectionSettingsOpen;
         private bool _isFireModeSettingsTabOpen;
@@ -18,6 +18,7 @@ namespace JUTPS.CustomEditors
         private bool _isAnimatorSettingsOpen;
         private bool _isStatesOpen;
         private bool _isAdditionalSettingsOpen;
+        private bool _isCharacterDebugOpen;
 
         public List<GameObject> _prefabListToAdd;
 
@@ -31,7 +32,8 @@ namespace JUTPS.CustomEditors
         private void OnEnable()
         {
             _isLocomotionSettingsOpen = EditorPrefs.GetBool($"{nameof(TPSControllerEditor)}.{nameof(_isLocomotionSettingsOpen)}");
-            _isRoundCheckSettingsOpen = EditorPrefs.GetBool($"{nameof(TPSControllerEditor)}.{nameof(_isRoundCheckSettingsOpen)}");
+            _isEquipItemSettingsOpen = EditorPrefs.GetBool($"{nameof(TPSControllerEditor)}.{nameof(_isEquipItemSettingsOpen)}");
+            _isGroundCheckSettingsOpen = EditorPrefs.GetBool($"{nameof(TPSControllerEditor)}.{nameof(_isGroundCheckSettingsOpen)}");
             _isWallCheckSettingsOpen = EditorPrefs.GetBool($"{nameof(TPSControllerEditor)}.{nameof(_isWallCheckSettingsOpen)}");
             _isStepCorrectionSettingsOpen = EditorPrefs.GetBool($"{nameof(TPSControllerEditor)}.{nameof(_isStepCorrectionSettingsOpen)}");
             _isFireModeSettingsTabOpen = EditorPrefs.GetBool($"{nameof(TPSControllerEditor)}.{nameof(_isFireModeSettingsTabOpen)}");
@@ -39,6 +41,7 @@ namespace JUTPS.CustomEditors
             _isAnimatorSettingsOpen = EditorPrefs.GetBool($"{nameof(TPSControllerEditor)}.{nameof(_isAnimatorSettingsOpen)}");
             _isStatesOpen = EditorPrefs.GetBool($"{nameof(TPSControllerEditor)}.{nameof(_isStatesOpen)}");
             _isAdditionalSettingsOpen = EditorPrefs.GetBool($"{nameof(TPSControllerEditor)}.{nameof(_isAdditionalSettingsOpen)}");
+            _isCharacterDebugOpen = EditorPrefs.GetBool($"{nameof(TPSControllerEditor)}.{nameof(_isCharacterDebugOpen)}");
 
             JUCharacter = (JUCharacterController)target;
             CharacterLayerMasksStartup();
@@ -47,7 +50,8 @@ namespace JUTPS.CustomEditors
         private void OnDestroy()
         {
             EditorPrefs.SetBool($"{nameof(TPSControllerEditor)}.{nameof(_isLocomotionSettingsOpen)}", _isLocomotionSettingsOpen);
-            EditorPrefs.SetBool($"{nameof(TPSControllerEditor)}.{nameof(_isRoundCheckSettingsOpen)}", _isRoundCheckSettingsOpen);
+            EditorPrefs.SetBool($"{nameof(TPSControllerEditor)}.{nameof(_isEquipItemSettingsOpen)}", _isEquipItemSettingsOpen);
+            EditorPrefs.SetBool($"{nameof(TPSControllerEditor)}.{nameof(_isGroundCheckSettingsOpen)}", _isGroundCheckSettingsOpen);
             EditorPrefs.SetBool($"{nameof(TPSControllerEditor)}.{nameof(_isWallCheckSettingsOpen)}", _isWallCheckSettingsOpen);
             EditorPrefs.SetBool($"{nameof(TPSControllerEditor)}.{nameof(_isStepCorrectionSettingsOpen)}", _isStepCorrectionSettingsOpen);
             EditorPrefs.SetBool($"{nameof(TPSControllerEditor)}.{nameof(_isFireModeSettingsTabOpen)}", _isFireModeSettingsTabOpen);
@@ -55,6 +59,7 @@ namespace JUTPS.CustomEditors
             EditorPrefs.SetBool($"{nameof(TPSControllerEditor)}.{nameof(_isAnimatorSettingsOpen)}", _isAnimatorSettingsOpen);
             EditorPrefs.SetBool($"{nameof(TPSControllerEditor)}.{nameof(_isStatesOpen)}", _isStatesOpen);
             EditorPrefs.SetBool($"{nameof(TPSControllerEditor)}.{nameof(_isAdditionalSettingsOpen)}", _isAdditionalSettingsOpen);
+            EditorPrefs.SetBool($"{nameof(TPSControllerEditor)}.{nameof(_isCharacterDebugOpen)}", _isCharacterDebugOpen);
         }
 
         public override void OnInspectorGUI()
@@ -68,7 +73,10 @@ namespace JUTPS.CustomEditors
             _isLocomotionSettingsOpen = GUILayout.Toggle(_isLocomotionSettingsOpen, "Locomotion", toolbarStyle);
             MovementSettingsVariables();
 
-            _isRoundCheckSettingsOpen = GUILayout.Toggle(_isRoundCheckSettingsOpen, "Ground Check", toolbarStyle);
+            _isEquipItemSettingsOpen = GUILayout.Toggle(_isEquipItemSettingsOpen, "Item Equiping", toolbarStyle);
+            ItemEquipingSettingsVariables();
+
+            _isGroundCheckSettingsOpen = GUILayout.Toggle(_isGroundCheckSettingsOpen, "Ground Check", toolbarStyle);
             GroundCheckSettingsVariables();
 
             _isWallCheckSettingsOpen = GUILayout.Toggle(_isWallCheckSettingsOpen, "Wall Check", toolbarStyle);
@@ -92,13 +100,10 @@ namespace JUTPS.CustomEditors
             _isStatesOpen = GUILayout.Toggle(_isStatesOpen, "Controller States", toolbarStyle);
             StatesViewVariables();
 
-            serializedObject.ApplyModifiedProperties();
-        }
+            _isCharacterDebugOpen = GUILayout.Toggle(_isCharacterDebugOpen, "Debug Options", toolbarStyle);
+            CharacterDebugVariables();
 
-        private void ExempleSettingsVariables()
-        {
-            if (_isLocomotionSettingsOpen)
-                CharacterSettingsGizmosViewer();
+            serializedObject.ApplyModifiedProperties();
         }
 
         private void MovementSettingsVariables()
@@ -106,7 +111,11 @@ namespace JUTPS.CustomEditors
             if (!_isLocomotionSettingsOpen)
                 return;
 
+
             serializedObject.FindProperty(nameof(JUCharacter.UseDefaultControllerInput)).boolValue = EditorGUILayout.Toggle("Use Default Inputs", JUCharacter.UseDefaultControllerInput);
+
+            if (JUCharacter.UseDefaultControllerInput)
+                serializedObject.FindProperty(nameof(JUCharacter.Inputs)).objectReferenceValue = EditorGUILayout.ObjectField("Default Input Asset", JUCharacter.Inputs, typeof(JUPlayerCharacterInputAsset), false);
 
             //Move On Forward When Isnt Aiming
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(JUCharacter.LocomotionMode)));
@@ -135,7 +144,7 @@ namespace JUTPS.CustomEditors
             serializedObject.FindProperty(nameof(JUCharacter.GroundAngleDesaceleration)).boolValue = EditorGUILayout.ToggleLeft("  High Inclines Slow Down", JUCharacter.GroundAngleDesaceleration, JUTPSEditor.CustomEditorStyles.MiniLeftButtonStyle());
             if (JUCharacter.GroundAngleDesaceleration)
             {
-                serializedObject.FindProperty(nameof(JUCharacter.GroundAngleDesacelerationMultiplier)).floatValue = EditorGUILayout.Slider("  Intensity", JUCharacter.GroundAngleDesacelerationMultiplier, 0, 2);
+                serializedObject.FindProperty(nameof(JUCharacter.GroundAngleDesacelerationMultiplier)).floatValue = EditorGUILayout.Slider("  Intensity", JUCharacter.GroundAngleDesacelerationMultiplier, 0, 4);
             }
 
             serializedObject.FindProperty(nameof(JUCharacter.CurvedMovement)).boolValue = EditorGUILayout.ToggleLeft("  Curved Movement", JUCharacter.CurvedMovement, JUTPSEditor.CustomEditorStyles.MiniLeftButtonStyle());
@@ -166,13 +175,20 @@ namespace JUTPS.CustomEditors
                 serializedObject.FindProperty(nameof(JUCharacter.SprintingDeceleration)).floatValue = EditorGUILayout.Slider("  Sprinting Deceleration", JUCharacter.SprintingDeceleration, 0, 10);
             }
             serializedObject.FindProperty(nameof(JUCharacter.DecreaseSpeedOnJump)).boolValue = EditorGUILayout.ToggleLeft("  Decrease Speed On Jump", JUCharacter.DecreaseSpeedOnJump, JUTPSEditor.CustomEditorStyles.MiniLeftButtonStyle());
+        }
 
-            CharacterSettingsGizmosViewer();
+        private void ItemEquipingSettingsVariables()
+        {
+            if (!_isEquipItemSettingsOpen)
+                return;
+
+            serializedObject.FindProperty(nameof(JUCharacter.ItemToEquipOnStart)).intValue = EditorGUILayout.IntField("  Item To Equip On Start", JUCharacter.ItemToEquipOnStart);
+            serializedObject.FindProperty(nameof(JUCharacter.AllowBareHands)).boolValue = EditorGUILayout.Toggle("  Allow Bare Hands", JUCharacter.AllowBareHands);
         }
 
         private void GroundCheckSettingsVariables()
         {
-            if (!_isRoundCheckSettingsOpen)
+            if (!_isGroundCheckSettingsOpen)
                 return;
 
             LayerMask tempMask = EditorGUILayout.MaskField("  Ground Layer", UnityEditorInternal.InternalEditorUtility.LayerMaskToConcatenatedLayersMask(JUCharacter.WhatIsGround), UnityEditorInternal.InternalEditorUtility.layers);
@@ -181,7 +197,6 @@ namespace JUTPS.CustomEditors
             serializedObject.FindProperty(nameof(JUCharacter.GroundCheckRadius)).floatValue = EditorGUILayout.Slider("  Radius", JUCharacter.GroundCheckRadius, 0.01f, 0.2f);
             serializedObject.FindProperty(nameof(JUCharacter.GroundCheckSize)).floatValue = EditorGUILayout.Slider("  Height", JUCharacter.GroundCheckSize, 0.05f, 0.5f);
             serializedObject.FindProperty(nameof(JUCharacter.GroundCheckHeighOfsset)).floatValue = EditorGUILayout.Slider("  Up Ofsset", JUCharacter.GroundCheckHeighOfsset, -1f, 1f);
-            CharacterSettingsGizmosViewer();
         }
 
         private void WallCheckSettingsVariables()
@@ -194,7 +209,6 @@ namespace JUTPS.CustomEditors
 
             serializedObject.FindProperty(nameof(JUCharacter.WallRayHeight)).floatValue = EditorGUILayout.Slider("  Wall Ray Height", JUCharacter.WallRayHeight, -5, 5);
             serializedObject.FindProperty(nameof(JUCharacter.WallRayDistance)).floatValue = EditorGUILayout.Slider("  Wall Ray Distance", JUCharacter.WallRayDistance, 0.1f, 5f);
-            CharacterSettingsGizmosViewer();
         }
 
         private void StepCorrectionSettingsVariables()
@@ -216,8 +230,6 @@ namespace JUTPS.CustomEditors
             serializedObject.FindProperty(nameof(JUCharacter.UngroundedStepUpSpeed)).floatValue = EditorGUILayout.FloatField("  UngroundedStepUp Speed", JUCharacter.UngroundedStepUpSpeed);
             serializedObject.FindProperty(nameof(JUCharacter.UngroundedStepUpRayDistance)).floatValue = EditorGUILayout.FloatField("  UngroundedStepUp Ray Distance", JUCharacter.UngroundedStepUpRayDistance);
             serializedObject.FindProperty(nameof(JUCharacter.StoppingTimeOnStepPosition)).floatValue = EditorGUILayout.FloatField("  Stopping Time On StepPosition", JUCharacter.StoppingTimeOnStepPosition);
-
-            CharacterSettingsGizmosViewer();
         }
 
         private void DropItensField()
@@ -303,7 +315,6 @@ namespace JUTPS.CustomEditors
         {
             if (_isAnimatorSettingsOpen)
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(JUCharacter.anim)));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(JUCharacter.AnimatorParameters)));
             }
         }
@@ -332,18 +343,37 @@ namespace JUTPS.CustomEditors
                     lifestyle.fontSize = 12;
 
                     //Health Display
-                    int health_int = (int)JUCharacter.CharacterHealth.Health;
-                    EditorGUILayout.LabelField("Health: " + health_int.ToString() + "%", lifestyle, GUILayout.Width(120));
+                    float health = JUCharacter.CharacterHealth.Health;
+                    EditorGUILayout.LabelField("Health: " + ((int)health).ToString() + "%", lifestyle, GUILayout.Width(120));
                     //Health Slider
-                    JUCharacter.CharacterHealth.Health = GUILayout.HorizontalSlider(JUCharacter.CharacterHealth.Health, 0, JUCharacter.CharacterHealth.MaxHealth, GUILayout.Width(120), GUILayout.Height(2));
+                    float newHealth = GUILayout.HorizontalSlider(JUCharacter.CharacterHealth.Health, 0, JUCharacter.CharacterHealth.MaxHealth, GUILayout.Width(120), GUILayout.Height(2));
+                    if (newHealth != JUCharacter.CharacterHealth.Health)
+                    {
+                        if (Application.isPlaying)
+                        {
+                            if (JUCharacter.IsDead && newHealth > 0)
+                            {
+                                JUCharacter.CharacterHealth.ResetHealth();
+                            }
+                            else if (!JUCharacter.IsDead && newHealth <= 0)
+                            {
+                                JUCharacter.CharacterHealth.Kill();
+                            }
+                            else
+                            {
+                                JUCharacter.CharacterHealth.SetHealth(newHealth);
+                            }
+                        }
+                        else
+                        {
+                            JUCharacter.CharacterHealth.SetHealth(newHealth);
+                            EditorUtility.SetDirty(JUCharacter.CharacterHealth as MonoBehaviour);
+                        }
+                    }
                 }
                 else
                 {
                     EditorGUILayout.LabelField("Without health status, add the JU Health component");
-                    if (JUCharacter.GetComponent<JUHealth>() != null)
-                    {
-                        JUCharacter.CharacterHealth = JUCharacter.GetComponent<JUHealth>();
-                    }
                 }
                 GUILayout.Space(20);
 
@@ -402,11 +432,11 @@ namespace JUTPS.CustomEditors
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Default Skills", EditorStyles.boldLabel);
                 serializedObject.FindProperty(nameof(JUCharacter.EnablePunchAttacks)).boolValue = EditorGUILayout.Toggle("  Enable Punch Attacks", JUCharacter.EnablePunchAttacks);
+                serializedObject.FindProperty(nameof(JUCharacter.EnableMeleeWeaponsAttacks)).boolValue = EditorGUILayout.Toggle("  Enable Melee Weapons Attacks", JUCharacter.EnableMeleeWeaponsAttacks);
+                serializedObject.FindProperty(nameof(JUCharacter.EnableShot)).boolValue = EditorGUILayout.Toggle("  Enable Shot", JUCharacter.EnableShot);
                 serializedObject.FindProperty(nameof(JUCharacter.EnableRoll)).boolValue = EditorGUILayout.Toggle("  Enable Roll", JUCharacter.EnableRoll);
-
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Artificial Intelligence", EditorStyles.boldLabel);
-                serializedObject.FindProperty("IsArtificialIntelligence").boolValue = EditorGUILayout.Toggle("  Is AI", JUCharacter.IsArtificialIntelligence);
+                serializedObject.FindProperty(nameof(JUCharacter.EnableProne)).boolValue = EditorGUILayout.Toggle("  Enable Prone", JUCharacter.EnableProne);
+                serializedObject.FindProperty(nameof(JUCharacter.EnableAim)).boolValue = EditorGUILayout.Toggle("  Enable Aiming", JUCharacter.EnableAim);
 
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Physical Damage System", EditorStyles.boldLabel);
@@ -418,24 +448,28 @@ namespace JUTPS.CustomEditors
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(JUCharacter.PhysicalDamageIgnoreTags)));
 
                 EditorGUILayout.Space();
+                EditorGUILayout.LabelField("IK Settings", EditorStyles.boldLabel);
+                EditorGUILayout.Toggle("  Inverse Kinematics", JUCharacter.InverseKinematics);
+                //serializedObject.FindProperty(nameof(JUCharacter.RightElbowAdjust)).boolValue = EditorGUILayout.Toggle("  Right Elbow Adjust", JUCharacter.RightElbowAdjust);
+                serializedObject.FindProperty(nameof(JUCharacter.RightElbowAdjustWeight)).floatValue = EditorGUILayout.FloatField("  Right Elbow Adjust Weight", JUCharacter.RightElbowAdjustWeight);
+                //serializedObject.FindProperty(nameof(JUCharacter.LeftElbowAdjust)).boolValue = EditorGUILayout.Toggle("  Left Elbow Adjust", JUCharacter.LeftElbowAdjust);
+                serializedObject.FindProperty(nameof(JUCharacter.LeftElbowAdjustWeight)).floatValue = EditorGUILayout.FloatField("  Left Elbow Adjust Weight", JUCharacter.LeftElbowAdjustWeight);
+                serializedObject.FindProperty(nameof(JUCharacter.LookAtBodyWeight)).floatValue = EditorGUILayout.FloatField("  Look At Body Weight", JUCharacter.LookAtBodyWeight);
+                serializedObject.FindProperty(nameof(JUCharacter.HeadIKBodyWeight)).floatValue = EditorGUILayout.FloatField("  Head IK Body Weight", JUCharacter.HeadIKBodyWeight);
+
+                EditorGUILayout.Space();
             }
         }
 
-        private void CharacterSettingsGizmosViewer()
+        private void CharacterDebugVariables()
         {
-            if (!JUCharacter.TryGetComponent(out JUCharacterSettingsDrawer pldrw))
-            {
-                GUILayout.Space(10);
-                EditorGUILayout.HelpBox("Warning: there is no *JU Character Settings Drawer* on your character", MessageType.Warning);
-                if (GUILayout.Button("Add Component ''JU Character Settings Drawer'' ", EditorStyles.miniButtonMid))
-                {
-                    JUCharacterSettingsDrawer settingsDrawer = (JUCharacterSettingsDrawer)Undo.AddComponent(JUCharacter.gameObject, typeof(JUCharacterSettingsDrawer));
-                    settingsDrawer.GroundCheck = true;
-                    settingsDrawer.StepCorrection = true;
-                    Debug.Log("Added JU Character Settings Drawer Component for the character");
-                }
-                GUILayout.Space(10);
-            }
+            if (!_isCharacterDebugOpen)
+                return;
+
+            EditorGUI.indentLevel += 1;
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(JUCharacter.CharacterDebug)));
+            EditorGUILayout.Space();
+            EditorGUI.indentLevel -= 1;
         }
 
         private void CharacterLayerMasksStartup()

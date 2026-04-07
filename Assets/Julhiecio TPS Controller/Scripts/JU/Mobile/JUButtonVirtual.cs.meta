@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: d6d2d5b87d0832a4bb0ae5e2fad60919
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {fileID: 2800000, guid: 4e825c623bc27e843bdbe62c302a4ba8, type: 3}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 251334
+  packageName: JU TPS 3 - Third Person Shooter GameKit + Vehicle Physics
+  packageVersion: 3.3.7
+  assetPath: Assets/Julhiecio TPS Controller/Scripts/JU/Mobile/JUButtonVirtual.cs
+  uploadId: 892152

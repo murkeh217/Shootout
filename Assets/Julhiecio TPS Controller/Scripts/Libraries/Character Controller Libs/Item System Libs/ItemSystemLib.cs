@@ -10,50 +10,8 @@ using JUTPSEditor.JUHeader;
 
 namespace JUTPS.ItemSystem
 {
-	public class JUItem : MonoBehaviour
-	{
-		[JUHeader("Item Setting")]
-		public string ItemFilterTag = "General";
-		public Sprite ItemIcon;
-		public bool Unlocked;
-		public int ItemQuantity;
-		public int MaxItemQuantity = 1;
-		public string ItemName;
-		public int ItemSwitchID;
-
-		public virtual void UseItem()
-		{
-			if (ItemQuantity > 0)
-			{
-				RemoveItem();
-			}
-			else
-			{
-				return;
-			}
-		}
-		public virtual void RemoveItem()
-		{
-			ItemQuantity--;
-			ItemQuantity = Mathf.Clamp(ItemQuantity, 0, MaxItemQuantity);
-			//if (ItemQuantity == 0) Unlocked = false;
-		}
-		public virtual void AddItem()
-		{
-			ItemQuantity++;
-			ItemQuantity = Mathf.Clamp(ItemQuantity, 0, MaxItemQuantity);
-
-			if (ItemQuantity > 0) Unlocked = true;
-		}
-	}
-
 	public class JUHoldableItem : JUItem
 	{
-		[HideInInspector] public GameObject Owner;
-		[HideInInspector] public JUCharacterController TPSOwner;
-		public WeaponAimRotationCenter WeaponRotationCenter;
-		[HideInInspector] public JUCameraController CamPivot;
-
 		[JUHeader("Use Setting")]
 		public bool SingleUseItem;
 		public bool ContinuousUseItem;
@@ -62,8 +20,7 @@ namespace JUTPS.ItemSystem
 		public GameObject ItemModelInBody;
 
 		public float TimeToUse;
-		[HideInInspector] public float CurrentTimeToUse;
-		public bool CanUseItem = true;
+		public float CurrentTimeToUse { get; protected set; }
 		public bool IsUsingItem = false;
 
 		[JUHeader("Wielding")]
@@ -79,6 +36,15 @@ namespace JUTPS.ItemSystem
 
 		[JUHeader("IK Settings")]
 		public Transform OppositeHandPosition;
+
+		public GameObject Owner { get; private set; }
+		public JUCharacterController TPSOwner { get; private set; }
+		public WeaponAimRotationCenter WeaponRotationCenter { get; private set; }
+
+		public JUCameraController CamPivot
+		{
+			get => TPSOwner.MyPivotCamera;
+		}
 
 		public enum ItemSwitchPosition { Hips, Back }
 		public enum ItemHoldingPose { PistolTwoHands, PistolOneHand, Rifle, Free }
@@ -100,7 +66,6 @@ namespace JUTPS.ItemSystem
 				{
 					Owner = transform.GetComponentInParent<JUCharacterController>().gameObject;
 					TPSOwner = Owner.GetComponent<JUCharacterController>();
-					if (TPSOwner.anim == null) TPSOwner.anim = TPSOwner.GetComponent<Animator>();
 
 					if (TPSOwner.anim.GetBoneTransform(HumanBodyBones.LeftHand) == null)
 					{
@@ -111,7 +76,6 @@ namespace JUTPS.ItemSystem
 					IsLeftHandItem = (TPSOwner.anim.GetBoneTransform(HumanBodyBones.LeftHand).transform == transform.parent) ? true : false;
 
 					WeaponRotationCenter = TPSOwner != null ? TPSOwner.PivotItemRotation.GetComponent<WeaponAimRotationCenter>() : null;
-					CamPivot = TPSOwner.MyPivotCamera;
 				}
 			}
 		}

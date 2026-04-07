@@ -23,13 +23,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2507386505859246215}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2507386507541761410}
   m_Father: {fileID: 2507386506159117426}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2507386506159117424
 GameObject:
@@ -56,13 +57,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2507386506159117424}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 20.5, y: 4.54, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2507386505859246208}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2507386506159117425
 MonoBehaviour:
@@ -90,8 +92,8 @@ MonoBehaviour:
   LockCursor: 1
   HideCursor: 1
   CustomCameraStates: []
-  GeneralSensibility: 0.5
-  GeneralVerticalSensibility: 0.5
+  GeneralSensibility: 0.3
+  GeneralVerticalSensibility: 0.3
   InvertHorizontal: 0
   InvertVertical: 0
   rotX: 0
@@ -101,6 +103,7 @@ MonoBehaviour:
   CameraRecoilReaction: 1
   RecoilRotateCamera: 1
   CameraRecoilSensibility: 0.5
+  InputAsset: {fileID: 11400000, guid: aca8a726812237f4697ed31b7f3e8818, type: 2}
   FPSCameraState:
     StateName: FPS Camera State
     Distance: 0
@@ -112,7 +115,7 @@ MonoBehaviour:
     RightCameraOffset: 0.1
     UpCameraOffset: 0.37
     ForwardCameraOffset: 0.15
-    RotationSensibility: 5
+    RotationSensibility: 1
     VerticalRotationSensibility: 0.7
     MaxRotation: 70
     MinRotation: -70
@@ -161,8 +164,8 @@ MonoBehaviour:
   AimInSpeed: 6
   AimOutSpeed: 6
   SwaySpeed: 5
-  HorizontalIntensity: -0.6
-  VerticalIntensity: -0.3
+  HorizontalIntensity: -0.2
+  VerticalIntensity: -0.05
   AimHorizontalIntensity: 1
   AimVerticalIntensity: 1
 --- !u!114 &895615016612312432
@@ -204,12 +207,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2507386507541761415}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0.36238283, z: 0.10008952}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2507386505859246208}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &2507386507541761408
 Camera:
@@ -225,9 +229,17 @@ Camera:
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
+  m_Iso: 200
+  m_ShutterSpeed: 0.005
+  m_Aperture: 16
+  m_FocusDistance: 10
+  m_FocalLength: 50
+  m_BladeCount: 5
+  m_Curvature: {x: 2, y: 11}
+  m_BarrelClipping: 0.25
+  m_Anamorphism: 0
   m_SensorSize: {x: 36, y: 24}
   m_LensShift: {x: 0, y: 0}
-  m_FocalLength: 50
   m_NormalizedViewPortRect:
     serializedVersion: 2
     x: 0

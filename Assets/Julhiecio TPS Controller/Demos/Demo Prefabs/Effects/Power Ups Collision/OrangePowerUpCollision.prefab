@@ -9746,6 +9746,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SecondsToDestroy: 1
   DestroyOnStart: 1
+  DestroyOnDie: 0
 --- !u!114 &341670171118268063
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9758,4 +9759,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2dd2ca464ee8eb24194599ee8dfd276b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AudioTag: {fileID: 11400000, guid: b7f60ffc055fd01479c79dd9351b4dff, type: 2}
   AudioSource: {fileID: 2590439400649959449}

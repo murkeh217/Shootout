@@ -6,7 +6,7 @@ using JUTPS.JUInputSystem;
 namespace JUTPS.CameraSystems
 {
 
-	[AddComponentMenu("JU TPS/Third Person System/Cameras/JU TopDown Camera Controller")]
+	[AddComponentMenu("JU TPS/Cameras/JU TopDown Camera Controller")]
 	public class TDCameraController : JUCameraController
 	{
 		[HideInInspector] public JUCharacterController PlayerTarget;
@@ -20,14 +20,18 @@ namespace JUTPS.CameraSystems
 
 		protected override void Start()
 		{
+			var defaultTargetToFollow = TargetToFollow;
+
+			// Find the target to follow if is null.
 			base.Start();
-			//Get JU Character Controller reference
-			if (TargetToFollow != null)
+			
+			if (TargetToFollow.root.TryGetComponent(out JUCharacterController JUcharacter))
 			{
-				if (TargetToFollow.TryGetComponent(out JUCharacterController JUcharacter))
-				{
-					PlayerTarget = JUcharacter; TargetToFollow = PlayerTarget.HumanoidSpine;
-				}
+				PlayerTarget = JUcharacter;
+
+				// Only use the spline only if there was not a default transform to follow.
+				if (defaultTargetToFollow == null)
+					TargetToFollow = PlayerTarget.HumanoidSpine;
 			}
 		}
 		//update camera states

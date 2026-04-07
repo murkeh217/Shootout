@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using JU;
 using UnityEngine;
 
 namespace JUTPS.Utilities
@@ -16,7 +17,7 @@ namespace JUTPS.Utilities
             {
                 if (other.gameObject.CompareTag(CharacterTag))
                 {
-                    if(other.TryGetComponent(out JUHealth health))
+                    if(other.TryGetComponent(out IHealth health))
                     {
                         health.DoDamage(Damage);
                     }
@@ -24,7 +25,7 @@ namespace JUTPS.Utilities
             }
             else
             {
-                if (other.TryGetComponent(out JUHealth health))
+                if (other.TryGetComponent(out IHealth health))
                 {
                     health.DoDamage(Damage);
                 }

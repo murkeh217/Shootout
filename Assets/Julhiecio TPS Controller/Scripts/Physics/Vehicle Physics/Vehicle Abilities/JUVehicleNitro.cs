@@ -1,12 +1,12 @@
-﻿using UnityEngine;
-using JUTPS.JUInputSystem;
-using UnityEngine.UIElements;
+﻿using JUTPS.JUInputSystem;
+using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UIElements;
 
 namespace JUTPS.VehicleSystem
 {
     /// <summary>
-    /// Add speed boost to a <seealso cref="VehicleSystem.Vehicle"/>.
+    /// Add speed boost to a <seealso cref="VehicleSystem.JUVehicle"/>.
     /// </summary>
     public class JUVehicleNitro : MonoBehaviour
     {
@@ -92,7 +92,7 @@ namespace JUTPS.VehicleSystem
         public NitroSettings Settings;
 
         /// <summary>
-        /// Use default <see cref="JUInput"/> to provide controls?
+        /// Use player controls to use nitro?
         /// </summary>
         public bool UseDefaultControls;
 
@@ -114,7 +114,7 @@ namespace JUTPS.VehicleSystem
         /// <summary>
         /// The target vehicle of this boost system.
         /// </summary>
-        public Vehicle Vehicle { get; private set; }
+        public JUWheeledVehicle Vehicle { get; private set; }
 
         /// <summary>
         /// Return true if the boost is active.
@@ -171,7 +171,7 @@ namespace JUTPS.VehicleSystem
         }
 
         /// <summary>
-        /// Creates a <see cref="JUVehicleNitro"/> component for <see cref="VehicleSystem.Vehicle"/>.
+        /// Creates a <see cref="JUVehicleNitro"/> component for <see cref="VehicleSystem.JUVehicle"/>.
         /// </summary>
         public JUVehicleNitro()
         {
@@ -183,7 +183,7 @@ namespace JUTPS.VehicleSystem
 
         private void Start()
         {
-            Vehicle = GetComponent<Vehicle>();
+            Vehicle = GetComponent<JUWheeledVehicle>();
             ReloadComplete();
         }
 
@@ -194,7 +194,7 @@ namespace JUTPS.VehicleSystem
 
             if (UseDefaultControls)
             {
-                if (JUInput.GetButton(JUInput.Buttons.RunButton))
+                if (Vehicle.PlayerInputs.IsNitroPressed)
                     UseNitro();
             }
 
@@ -223,7 +223,7 @@ namespace JUTPS.VehicleSystem
                         forceMagnetude /= Vehicle.WheelsCount;
                         for (int i = 0; i < Vehicle.WheelsCount; i++)
                         {
-                            Vehicle.WheelData wheelData = Vehicle.GetWheel(i);
+                            JUWheeledVehicle.WheelData wheelData = Vehicle.GetWheel(i);
                             if (IsWheelApplyingBoost(wheelData))
                             {
                                 Vector3 force = wheelData.WheelForward * forceMagnetude;
@@ -257,7 +257,7 @@ namespace JUTPS.VehicleSystem
             OnSetActiveNitro.Invoke(false);
         }
 
-        private bool IsWheelApplyingBoost(Vehicle.WheelData wheel)
+        private bool IsWheelApplyingBoost(JUWheeledVehicle.WheelData wheel)
         {
             if (!IsUsingNitro)
                 return false;

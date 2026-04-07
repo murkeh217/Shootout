@@ -1,280 +1,302 @@
-﻿using UnityEngine;
+﻿using JUTPS.ActionScripts;
 using JUTPS.JUInputSystem;
 using JUTPS.WeaponSystem;
-using JUTPS.ActionScripts;
+using UnityEngine;
 namespace JUTPS.CameraSystems
 {
 
-	[AddComponentMenu("JU TPS/Third Person System/Cameras/JU Third Person Camera Controller")]
-	public class TPSCameraController : JUCameraController
-	{
+    [AddComponentMenu("JU TPS/Cameras/JU Third Person Camera Controller")]
+    public class TPSCameraController : JUCameraController
+    {
+        public JUPlayerCharacterInputAsset InputAsset;
+        public JUCharacterController characterTarget;
 
-		public JUCharacterController characterTarget;
+        [Header("Settings")]
+        public bool FollowUpTarget;
 
-		[Header("Settings")]
-		public bool FollowUpTarget;
+        [Header("Auto Rotator Settings")]
+        public bool EnableAutoRotator;
+        public float AutoRotateTime = 5;
+        public float AutoRotationSpeed = 4;
 
-		[Header("Auto Rotator Settings")]
-		public bool EnableAutoRotator;
-		public float AutoRotateTime = 5;
-		public float AutoRotationSpeed = 4;
+        public bool EnableVehicleAutoRotation;
+        public float VehicleAutoRotateTime = 3;
+        public float VehicleAutoRotationSpeed = 8;
 
-		public bool EnableVehicleAutoRotation;
-		public float VehicleAutoRotateTime = 3;
-		public float VehicleAutoRotationSpeed = 8;
+        //[Header("WeaponSway")]
+        public WeaponSwayOptions AimingSwaySettings = new WeaponSwayOptions(true, 1, 1, 1);
 
-		//[Header("WeaponSway")]
-		public WeaponSwayOptions AimingSwaySettings = new WeaponSwayOptions(true, 1, 1, 1);
+        //[Header("Camera States")]
+        public CameraState NormalCameraState = new CameraState("Normal Camera State");
+        public CameraState FireModeCameraState = new CameraState("Fire Mode Camera State", movementSpeed: 40);
+        public CameraState AimModeCameraState = new CameraState("Scope Mode Camera State", 0, 15, 40, 0, 0, 0, 0, 0, 0, 2.5f);
+        public CameraState DrivingVehicleCameraState = new CameraState("Driving Vehicle Camera State", 8, 25, 70, 1.5f, 0, 0, 0, 0, 0, 5, -20, 80);
+        public CameraState DeadPlayerCameraState = new CameraState("Dead Player Camera State", 6, 5, 40, 0, 0, 0, 0, 0, 0, 2.5f, -30, 60);
 
-		//[Header("Camera States")]
-		public CameraState NormalCameraState = new CameraState("Normal Camera State");
-		public CameraState FireModeCameraState = new CameraState("Fire Mode Camera State", movementSpeed: 40);
-		public CameraState AimModeCameraState = new CameraState("Scope Mode Camera State", 0, 15, 40, 0, 0, 0, 0, 0, 0, 2.5f);
-		public CameraState DrivingVehicleCameraState = new CameraState("Driving Vehicle Camera State", 8, 25, 70, 1.5f, 0, 0, 0, 0, 0, 5, -20, 80);
-		public CameraState DeadPlayerCameraState = new CameraState("Dead Player Camera State", 6, 5, 40, 0, 0, 0, 0, 0, 0, 2.5f, -30, 60);
+        //Vehicle Auto rotation
+        protected float CurrentTimeToAutoRotation;
+        protected bool IsAutoRotationActivated;
 
-		//Vehicle Auto rotation
-		protected float CurrentTimeToAutoRotation;
-		protected bool IsAutoRotationActivated;
+        public float RawMouseX { get; private set; }
+        public float RawMouseY { get; private set; }
+        public float SmoothedMouseX { get; private set; }
+        public float SmoothedMouseY { get; private set; }
 
-		float xmouse;
-		float ymouse;
-		protected override void Start()
-		{
-			base.Start();
-			//Get JU Character Controller reference
-			if (TargetToFollow.TryGetComponent(out JUCharacterController JUcharacter)) { characterTarget = JUcharacter; TargetToFollow = characterTarget.HumanoidSpine; }
-		}
-		//Rotate camera and update camera states
-		protected virtual void Update()
-		{
-			SetRotationInput();
+        protected override void Start()
+        {
+            var defaultTargetToFollow = TargetToFollow;
 
-			if (FollowUpTarget)
-			{
-				RotateCamera(xmouse, ymouse, upward: characterTarget == null ? TargetToFollow.up : characterTarget.transform.up);
-			}
-			else
-			{
-				RotateCamera(xmouse, ymouse);
-			}
+            // Find the target to follow if is null.
+            base.Start();
 
-			if (EnableAutoRotator)
-			{
-				//Normal Auto Rotation
-				if (characterTarget != null)
-				{
-					NormalAutoRotation(characterTarget);
-				}
-				else
-				{
-					NormalAutoRotation(TargetToFollow);
-				}
-			}
+            if (TargetToFollow.root.TryGetComponent(out JUCharacterController JUcharacter))
+            {
+                characterTarget = JUcharacter;
 
-			//Camera State Update
-			UpdateCharacterState(characterTarget);
-			ChangeCameraStateAccordingCharacterState(CharacterState);
-			SetCameraToScopePosition();
-		}
+                // Only use the spline only if there was not a default transform to follow.
+                if (defaultTargetToFollow == null)
+                    TargetToFollow = characterTarget.HumanoidSpine;
+            }
+        }
+        //Rotate camera and update camera states
+        protected virtual void Update()
+        {
+            SmoothedMouseY = Mathf.Lerp(SmoothedMouseY, RawMouseY, 10 * Time.deltaTime);
+            SmoothedMouseX = Mathf.Lerp(SmoothedMouseX, RawMouseX, 10 * Time.deltaTime);
 
-		protected virtual void SetRotationInput()
-		{
-			if (Cursor.lockState != CursorLockMode.Locked && JUGameManager.IsMobileControls == false)
-			{
-				xmouse = 0;
-				ymouse = 0;
-				return;
-			}
+            SetRotationInput();
 
-			xmouse = JUInput.GetAxis(JUInput.Axis.RotateVertical);
-			ymouse = JUInput.GetAxis(JUInput.Axis.RotateHorizontal);
-		}
+            if (FollowUpTarget)
+            {
+                RotateCamera(RawMouseX, RawMouseY, upward: characterTarget == null ? TargetToFollow.up : characterTarget.transform.up);
+            }
+            else
+            {
+                RotateCamera(RawMouseX, RawMouseY);
+            }
 
-		//Move camera pivot
-		protected virtual void FixedUpdate()
-		{
-			//SetPivotCameraPosition(GetCurrentCameraState.GetCameraPivotPosition(TargetToFollow), true);
-			if (characterTarget != null)
-			{
-				DriveVehicles driveAbility = characterTarget.DriveVehicleAbility;
+            if (EnableAutoRotator)
+            {
+                //Normal Auto Rotation
+                if (characterTarget != null)
+                {
+                    NormalAutoRotation(characterTarget);
+                }
+                else
+                {
+                    NormalAutoRotation(TargetToFollow);
+                }
+            }
 
-				if (characterTarget.IsAiming) return;
-				if (driveAbility && driveAbility.IsDriving && driveAbility.CurrentVehicle)
-				{
-					SetPivotCameraPosition(GetCurrentCameraState.GetCameraPivotPosition(driveAbility.CurrentVehicle.transform), true);
-					//Driving Auto Rotation
-					if (EnableVehicleAutoRotation) DrivingVehicleAutoRotation(driveAbility.CurrentVehicle);
-				}
-				else
-				{
-					SetPivotCameraPosition(GetCurrentCameraState.GetCameraPivotPosition(TargetToFollow), true);
-				}
-			}
-			else
-			{
-				SetPivotCameraPosition(GetCurrentCameraState.GetCameraPivotPosition(TargetToFollow), true);
-			}
-		}
+            //Camera State Update
+            UpdateCharacterState(characterTarget);
+            ChangeCameraStateAccordingCharacterState(CurrentState);
+            SetCameraToScopePosition();
+        }
 
-		//Move real camera and change camera states
-		protected virtual void LateUpdate()
-		{
-			if (characterTarget) { if (characterTarget.IsAiming) return; }
-			SetCameraPosition(GetCurrentCameraState.GetCameraPosition(mCamera.transform), false);
-			SetCameraCollision(GetCurrentCameraState.CollisionLayers);
-			SetFieldOfView(GetCurrentCameraState.CameraFieldOfView);
-		}
-		public override void RecoilReaction(float Force)
-		{
-			base.RecoilReaction(Force);
+        protected virtual void SetRotationInput()
+        {
+            if (!InputAsset)
+            {
+                Debug.LogError($"The camera {name} hasn't a input asset assigned");
 
-			if (characterTarget == null) return;
+                RawMouseX = 0;
+                RawMouseY = 0;
+                return;
+            }
 
-			Aiming = characterTarget.IsAiming;
+            if (Cursor.lockState != CursorLockMode.Locked && !JUGameManager.IsMobileControls)
+            {
+                RawMouseX = 0;
+                RawMouseY = 0;
+                return;
+            }
+
+            RawMouseX = InputAsset.LookAxis.y;
+            RawMouseY = InputAsset.LookAxis.x;
+        }
+
+        //Move camera pivot
+        protected virtual void FixedUpdate()
+        {
+            //SetPivotCameraPosition(GetCurrentCameraState.GetCameraPivotPosition(TargetToFollow), true);
+            if (characterTarget != null)
+            {
+                DriveVehicles driveAbility = characterTarget.DriveVehicles;
+
+                if (characterTarget.IsAiming) return;
+                if (driveAbility && driveAbility.IsDriving && driveAbility.CurrentVehicle)
+                {
+                    SetPivotCameraPosition(GetCurrentCameraState.GetCameraPivotPosition(driveAbility.CurrentVehicle.transform), true);
+                    //Driving Auto Rotation
+                    if (EnableVehicleAutoRotation) DrivingVehicleAutoRotation(driveAbility.CurrentVehicle);
+                }
+                else
+                {
+                    SetPivotCameraPosition(GetCurrentCameraState.GetCameraPivotPosition(TargetToFollow), true);
+                }
+            }
+            else
+            {
+                SetPivotCameraPosition(GetCurrentCameraState.GetCameraPivotPosition(TargetToFollow), true);
+            }
+        }
+
+        //Move real camera and change camera states
+        protected virtual void LateUpdate()
+        {
+            if (characterTarget) { if (characterTarget.IsAiming) return; }
+            SetCameraPosition(GetCurrentCameraState.GetCameraPosition(mCamera.transform), false);
+            SetCameraCollision(GetCurrentCameraState.CollisionLayers);
+            SetFieldOfView(GetCurrentCameraState.CameraFieldOfView);
+        }
+        public override void RecoilReaction(float Force)
+        {
+            base.RecoilReaction(Force);
+
+            if (characterTarget == null) return;
+
+            Aiming = characterTarget.IsAiming;
 
 
-		}
+        }
 
-		//When Camera Rotate, vehicle auto rotation is off.
-		protected override void OnCameraRotate()
-		{
-			StopAutoRotation();
-		}
+        //When Camera Rotate, vehicle auto rotation is off.
+        protected override void OnCameraRotate()
+        {
+            StopAutoRotation();
+        }
 
-		protected enum PlayerStates { Normal, FireMode, Aiming, Driving, Dead }
-		protected PlayerStates CharacterState;
-		protected virtual void UpdateCharacterState(JUCharacterController character)
-		{
-			if (character == null) return;
-			if (!character.IsAiming && !character.IsDriving && !character.FiringMode && !character.IsDead) { CharacterState = PlayerStates.Normal; }
+        public enum PlayerStates { Normal, FireMode, Aiming, Driving, Dead }
+        public PlayerStates CurrentState { get; protected set; }
 
-			if (character.IsAiming) { CharacterState = PlayerStates.Aiming; }
-			if (character.FiringMode) { CharacterState = PlayerStates.FireMode; }
-			if (character.IsDriving) { CharacterState = PlayerStates.Driving; }
-			if (character.IsDead) { CharacterState = PlayerStates.Dead; }
-		}
-		protected virtual void ChangeCameraStateAccordingCharacterState(PlayerStates characterState)
-		{
-			if (IsTransitioningToCustomState) return;
+        protected virtual void UpdateCharacterState(JUCharacterController character)
+        {
+            if (character == null) return;
+            if (!character.IsAiming && !character.IsDriving && !character.FiringMode && !character.IsDead) { CurrentState = PlayerStates.Normal; }
 
-			switch (characterState)
-			{
-				case PlayerStates.Normal:
-					SetCameraStateTransition(GetCurrentCameraState, NormalCameraState);
-					break;
-				case PlayerStates.FireMode:
-					SetCameraStateTransition(GetCurrentCameraState, FireModeCameraState);
-					break;
-				case PlayerStates.Aiming:
-					SetCameraStateTransition(GetCurrentCameraState, AimModeCameraState);
-					break;
-				case PlayerStates.Driving:
-					SetCameraStateTransition(GetCurrentCameraState, DrivingVehicleCameraState);
-					break;
-				case PlayerStates.Dead:
-					SetCameraStateTransition(GetCurrentCameraState, DeadPlayerCameraState);
-					break;
-			}
-		}
+            if (character.IsAiming) { CurrentState = PlayerStates.Aiming; }
+            if (character.FiringMode) { CurrentState = PlayerStates.FireMode; }
+            if (character.IsDriving) { CurrentState = PlayerStates.Driving; }
+            if (character.IsDead) { CurrentState = PlayerStates.Dead; }
+        }
+        protected virtual void ChangeCameraStateAccordingCharacterState(PlayerStates characterState)
+        {
+            if (IsTransitioningToCustomState) return;
 
-		//[HideInInspector]Vector3 SmoothedScopeCameraPosition;
-		float SmoothedXMouse;
-		float SmoothedYMouse;
-		protected virtual void SetCameraToScopePosition()
-		{
-			if (characterTarget == null) return;
+            switch (characterState)
+            {
+                case PlayerStates.Normal:
+                    SetCameraStateTransition(GetCurrentCameraState, NormalCameraState);
+                    break;
+                case PlayerStates.FireMode:
+                    SetCameraStateTransition(GetCurrentCameraState, FireModeCameraState);
+                    break;
+                case PlayerStates.Aiming:
+                    SetCameraStateTransition(GetCurrentCameraState, AimModeCameraState);
+                    break;
+                case PlayerStates.Driving:
+                    SetCameraStateTransition(GetCurrentCameraState, DrivingVehicleCameraState);
+                    break;
+                case PlayerStates.Dead:
+                    SetCameraStateTransition(GetCurrentCameraState, DeadPlayerCameraState);
+                    break;
+            }
+        }
 
-			Aiming = characterTarget.IsAiming;
+        //[HideInInspector]Vector3 SmoothedScopeCameraPosition;
 
-			if (characterTarget.IsItemEquiped == false) return;
+        protected virtual void SetCameraToScopePosition()
+        {
+            if (characterTarget == null) return;
 
-			if (Aiming && characterTarget.WeaponInUseRightHand.AimMode != Weapon.WeaponAimMode.None && characterTarget.FiringMode)
-			{
-				var gun = characterTarget.WeaponInUseRightHand;
+            Aiming = characterTarget.IsAiming;
 
-				SmoothedYMouse = Mathf.Lerp(SmoothedYMouse, ymouse, 10 * Time.deltaTime);
-				SmoothedXMouse = Mathf.Lerp(SmoothedXMouse, xmouse, 10 * Time.deltaTime);
-				float xSway = AimingSwaySettings.EnableWeaponSway ? (gun.CameraAimingPosition.x - AimingSwaySettings.GeneralIntensity * AimingSwaySettings.HorizontalIntensity * SmoothedYMouse / 80) : gun.CameraAimingPosition.x;
-				float ySway = AimingSwaySettings.EnableWeaponSway ? (gun.CameraAimingPosition.y - AimingSwaySettings.GeneralIntensity * AimingSwaySettings.VerticalIntensity * SmoothedXMouse / 80) : gun.CameraAimingPosition.y;
+            if (characterTarget.IsItemEquiped == false) return;
 
-				// > Weapon Sway Position
-				Vector3 scopePosition = gun.transform.position
-					+ gun.transform.right * xSway
-					+ gun.transform.up * ySway
-					+ mCamera.transform.parent.forward * gun.CameraAimingPosition.z;
+            if (Aiming && characterTarget.RightHandWeapon.AimMode != Weapon.WeaponAimMode.None && characterTarget.FiringMode)
+            {
+                var gun = characterTarget.RightHandWeapon;
+                float xSway = AimingSwaySettings.EnableWeaponSway ? (gun.CameraAimingPosition.x - AimingSwaySettings.GeneralIntensity * AimingSwaySettings.HorizontalIntensity * SmoothedMouseY / 80) : gun.CameraAimingPosition.x;
+                float ySway = AimingSwaySettings.EnableWeaponSway ? (gun.CameraAimingPosition.y - AimingSwaySettings.GeneralIntensity * AimingSwaySettings.VerticalIntensity * SmoothedMouseX / 80) : gun.CameraAimingPosition.y;
 
-				//Set Scope Position + Sway
-				SetCameraPosition(scopePosition, false);
+                // > Weapon Sway Position
+                Vector3 scopePosition = gun.transform.position
+                    + gun.transform.right * xSway
+                    + gun.transform.up * ySway
+                    + mCamera.transform.parent.forward * gun.CameraAimingPosition.z;
 
-				//Set Field Of View
-				AimModeCameraState.CameraFieldOfView = Mathf.Lerp(AimModeCameraState.CameraFieldOfView, gun.CameraFOV, 15 * Time.deltaTime);
-				SetFieldOfView(AimModeCameraState.CameraFieldOfView);
-			}
-			else
-			{
-				//SmoothedScopeCameraPosition = mCamera.transform.position;
-				AimModeCameraState.CameraFieldOfView = GetCurrentCameraState.CameraFieldOfView;
-			}
-		}
-		protected virtual void NormalAutoRotation(JUCharacterController character)
-		{
-			if (character == null || EnableAutoRotator == false) return;
-			if (character.FiringMode) { CurrentTimeToAutoRotation = 0; return; }
-			if (character.IsMoving) CurrentTimeToAutoRotation += 2 * Time.deltaTime;
-			AutoRotator(character.transform, AutoRotateTime, AutoRotationSpeed, AutoRotationSpeed);
-		}
-		protected virtual void NormalAutoRotation(Transform targetToFollow)
-		{
-			if (targetToFollow == null || EnableAutoRotator == false) return;
+                //Set Scope Position + Sway
+                SetCameraPosition(scopePosition, false);
 
-			AutoRotator(targetToFollow, AutoRotateTime, AutoRotationSpeed, AutoRotationSpeed);
-		}
-		protected virtual void DrivingVehicleAutoRotation(JUTPS.VehicleSystem.Vehicle drivingVehicle)
-		{
-			if (drivingVehicle == null) return;
-			if (drivingVehicle.IsOn == false) return;
-			AutoRotator(drivingVehicle.transform, VehicleAutoRotateTime, VehicleAutoRotationSpeed, VehicleAutoRotationSpeed);
-		}
-		public virtual void AutoRotator(Transform targetRotation, float MaxTimeToAutoRotation, float HorizontalSpeed = 5, float VerticalSpeed = 3, float AngleToStopAutoRotation = 90)
-		{
-			if (Vector3.Angle(targetRotation.up, Vector3.up) > AngleToStopAutoRotation)
-			{
-				Debug.Log("Disabled Camera Auto Rotation in angle " + AngleToStopAutoRotation);
-				return;
-			}
-			if (IsAutoRotationActivated == true)
-			{
-				rotytarget = Mathf.LerpAngle(rotytarget, targetRotation.rotation.eulerAngles.y, HorizontalSpeed * Time.fixedDeltaTime);
-				rotxtarget = Mathf.LerpAngle(rotxtarget, 0, VerticalSpeed * Time.fixedDeltaTime);
-				if (FollowUpTarget)
-				{
-					RotateCamera(xmouse, ymouse, upward: characterTarget == null ? TargetToFollow.up : characterTarget.transform.up);
-				}
-				else
-				{
-					RotateCamera(xmouse, ymouse);
-				}
-			}
-			else
-			{
-				CurrentTimeToAutoRotation += Time.deltaTime;
-				if (CurrentTimeToAutoRotation >= MaxTimeToAutoRotation) { IsAutoRotationActivated = true; CurrentTimeToAutoRotation = 0; }
-			}
-		}
-		public virtual void StopAutoRotation()
-		{
-			//Debug.Log("Stopped Camera Auto Rotation");
-			CurrentTimeToAutoRotation = 0; IsAutoRotationActivated = false;
-		}
+                //Set Field Of View
+                AimModeCameraState.CameraFieldOfView = Mathf.Lerp(AimModeCameraState.CameraFieldOfView, gun.CameraFOV, 15 * Time.deltaTime);
+                SetFieldOfView(AimModeCameraState.CameraFieldOfView);
+            }
+            else
+            {
+                //SmoothedScopeCameraPosition = mCamera.transform.position;
+                AimModeCameraState.CameraFieldOfView = GetCurrentCameraState.CameraFieldOfView;
+            }
+        }
+        protected virtual void NormalAutoRotation(JUCharacterController character)
+        {
+            if (character == null || EnableAutoRotator == false) return;
+            if (character.FiringMode) { CurrentTimeToAutoRotation = 0; return; }
+            if (character.IsMoving) CurrentTimeToAutoRotation += 2 * Time.deltaTime;
+            AutoRotator(character.transform, AutoRotateTime, AutoRotationSpeed, AutoRotationSpeed);
+        }
+        protected virtual void NormalAutoRotation(Transform targetToFollow)
+        {
+            if (targetToFollow == null || EnableAutoRotator == false) return;
 
-		/// <summary>
-		/// this will disable forever
-		/// </summary>
-		public virtual void DisableVehicleAutoRotation()
-		{
-			StopAutoRotation(); EnableVehicleAutoRotation = false;
-		}
-	}
+            AutoRotator(targetToFollow, AutoRotateTime, AutoRotationSpeed, AutoRotationSpeed);
+        }
+        protected virtual void DrivingVehicleAutoRotation(VehicleSystem.JUVehicle drivingVehicle)
+        {
+            if (drivingVehicle == null) return;
+            if (drivingVehicle.IsOn == false) return;
+            AutoRotator(drivingVehicle.transform, VehicleAutoRotateTime, VehicleAutoRotationSpeed, VehicleAutoRotationSpeed);
+        }
+        public virtual void AutoRotator(Transform targetRotation, float MaxTimeToAutoRotation, float HorizontalSpeed = 5, float VerticalSpeed = 3, float AngleToStopAutoRotation = 90)
+        {
+            if (Vector3.Angle(targetRotation.up, Vector3.up) > AngleToStopAutoRotation)
+            {
+                Debug.Log("Disabled Camera Auto Rotation in angle " + AngleToStopAutoRotation);
+                return;
+            }
+            if (IsAutoRotationActivated == true)
+            {
+                rotytarget = Mathf.LerpAngle(rotytarget, targetRotation.rotation.eulerAngles.y, HorizontalSpeed * Time.fixedDeltaTime);
+                rotxtarget = Mathf.LerpAngle(rotxtarget, 0, VerticalSpeed * Time.fixedDeltaTime);
+                if (FollowUpTarget)
+                {
+                    RotateCamera(RawMouseX, RawMouseY, upward: characterTarget == null ? TargetToFollow.up : characterTarget.transform.up);
+                }
+                else
+                {
+                    RotateCamera(RawMouseX, RawMouseY);
+                }
+            }
+            else
+            {
+                CurrentTimeToAutoRotation += Time.deltaTime;
+                if (CurrentTimeToAutoRotation >= MaxTimeToAutoRotation) { IsAutoRotationActivated = true; CurrentTimeToAutoRotation = 0; }
+            }
+        }
+        public virtual void StopAutoRotation()
+        {
+            //Debug.Log("Stopped Camera Auto Rotation");
+            CurrentTimeToAutoRotation = 0; IsAutoRotationActivated = false;
+        }
+
+        /// <summary>
+        /// this will disable forever
+        /// </summary>
+        public virtual void DisableVehicleAutoRotation()
+        {
+            StopAutoRotation(); EnableVehicleAutoRotation = false;
+        }
+    }
 
 }

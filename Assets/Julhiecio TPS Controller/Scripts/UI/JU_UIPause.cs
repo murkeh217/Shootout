@@ -1,4 +1,11 @@
+using System;
+using System.Collections;
+using JU.Editor;
+using JUTPS.CameraSystems;
+using JUTPS.Utilities;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -9,59 +16,9 @@ namespace JUTPS.UI
     /// </summary>
     public class JU_UIPause : MonoBehaviour
     {
-        /// <summary>
-        /// Cursor visibility state.
-        /// </summary>
-        public enum CursorVisibility
-        {
-            /// <summary>
-            /// The cursor is visible.
-            /// </summary>
-            Show,
-
-            /// <summary>
-            /// The cursor is invisible.
-            /// </summary>
-            Hide
-        }
-
-        /// <summary>
-        /// The cursor lock state.
-        /// </summary>
-        public enum CursorControl
-        {
-            /// <summary>
-            /// The cursor can move.
-            /// </summary>
-            Free,
-
-            /// <summary>
-            /// The cursor is locked on screen center.
-            /// </summary>
-            Lock
-        }
-
-        /// <summary>
-        /// The cursor visibility state when the game is paused.
-        /// </summary>
-        [Header("Cursor On Pause")]
-        public CursorVisibility CursorVisibilityOnPause;
-
-        /// <summary>
-        /// The cursor lock mode when the game is paused.
-        /// </summary>
-        public CursorControl CursorControlOnPause;
-
-        /// <summary>
-        /// The cursor visibility when the game is unpaused.
-        /// </summary>
-        [Space]
-        public CursorVisibility CursorVisibilityOnContinue;
-
-        /// <summary>
-        /// The cursor lock state when the game is unpaused.
-        /// </summary>
-        public CursorControl CursorControlOnContinue;
+        private bool _firstCheckCalled;
+        private bool _defaultMouseVisible;
+        private CursorLockMode _defaultMouseLock;
 
         /// <summary>
         /// The scene name of the menu scene, used when the <see cref="MainMenuButton"/> is pressed.
@@ -87,6 +44,11 @@ namespace JUTPS.UI
         public Button ContinueButton;
 
         /// <summary>
+        /// The pause button on game HUD.
+        /// </summary>
+        public Button PauseButton;
+
+        /// <summary>
         /// The "game settings" button, shows the settings screen. <para/>
         /// See <seealso cref="JU_UISettings"/>
         /// </summary>
@@ -110,20 +72,75 @@ namespace JUTPS.UI
             get => JUPauseGame.Instance;
         }
 
+        private bool IsGameFocused
+        {
+#if UNITY_EDITOR
+            get => JUEditor.IsGameFocused;
+#else
+            get => true;
+#endif
+        }
+
         private void Awake()
         {
             Setup();
+
+            // Can't do it during the OnPause because the editor shows the cursor on press Escape, this break the logic.
+            InvokeRepeating(nameof(CheckCursorVisibility), 0.1f, 0.1f);
+
+            InputSystem.onEvent += OnPressSomething;
+        }
+
+        private IEnumerator Start()
+        {
+            yield return new WaitUntil(() =>
+            {
+                return JUEditor.IsGameFocused;
+            });
+
+            yield return new WaitForSeconds(0.2f);
+
+            CheckCursorVisibility();
+            StartCoroutine(FixCursorVisibility());
         }
 
         private void OnDestroy()
         {
             Unsetup();
+            InputSystem.onEvent -= OnPressSomething;
+        }
+
+        IEnumerator FixCursorVisibility()
+        {
+            yield return new WaitForEndOfFrame();
+            yield return new WaitUntil(() =>
+            {
+                return IsGameFocused && _firstCheckCalled;
+            });
+
+            if (!JUPauseGame.IsPaused)
+            {
+                Cursor.lockState = _defaultMouseLock;
+                Cursor.visible = _defaultMouseVisible;
+            }
+        }
+
+        private void OnPressSomething(InputEventPtr eventPtr, InputDevice device)
+        {
+            if (!(device is Keyboard keyboard))
+                return;
+
+            if (!IsGameFocused)
+            {
+                StartCoroutine(FixCursorVisibility());
+            }
         }
 
         private void Setup()
         {
             if (PauseScreen) PauseScreen.gameObject.SetActive(false);
             if (ContinueButton) ContinueButton.onClick.AddListener(OnPressContinueButton);
+            if (PauseButton) PauseButton.onClick.AddListener(OnPressPauseButton);
             if (SettingsButton) SettingsButton.onClick.AddListener(OnPressSettingsButton);
             if (MainMenuButton) MainMenuButton.onClick.AddListener(OnPressMainMenuButton);
             if (ExitGameButton) ExitGameButton.onClick.AddListener(OnPressExitGameButton);
@@ -150,33 +167,6 @@ namespace JUTPS.UI
             }
         }
 
-        private void SetCursorMode(CursorVisibility visibility, CursorControl control)
-        {
-            switch (visibility)
-            {
-                case CursorVisibility.Show:
-                    Cursor.visible = true;
-                    break;
-                case CursorVisibility.Hide:
-                    Cursor.visible = false;
-                    break;
-                default:
-                    break;
-            }
-
-            switch (control)
-            {
-                case CursorControl.Free:
-                    Cursor.lockState = CursorLockMode.None;
-                    break;
-                case CursorControl.Lock:
-                    Cursor.lockState = CursorLockMode.Locked;
-                    break;
-                default:
-                    break;
-            }
-        }
-
         private void OnCloseSettingsScreen()
         {
             if (PauseManager)
@@ -190,7 +180,7 @@ namespace JUTPS.UI
             if (!PauseScreen)
                 return;
 
-            SetCursorMode(CursorVisibilityOnPause, CursorControlOnPause);
+            JUCameraController.LockMouse(false, false);
             PauseScreen.SetActive(true);
         }
 
@@ -198,14 +188,19 @@ namespace JUTPS.UI
         {
             if (!PauseScreen)
                 return;
-
-            SetCursorMode(CursorVisibilityOnContinue, CursorControlOnContinue);
+    
+            JUCameraController.LockMouse(Lock: _defaultMouseLock == CursorLockMode.Locked, Hide: !_defaultMouseVisible);
             PauseScreen.SetActive(false);
         }
 
         private void OnPressContinueButton()
         {
             JUPauseGame.Continue();
+        }
+
+        private void OnPressPauseButton()
+        {
+            JUPauseGame.Pause();
         }
 
         private void OnPressSettingsButton()
@@ -232,6 +227,16 @@ namespace JUTPS.UI
         private void OnPressExitGameButton()
         {
             Application.Quit();
+        }
+
+        private void CheckCursorVisibility()
+        {
+            if (JUPauseGame.IsPaused || !IsGameFocused)
+                return;
+
+            _firstCheckCalled = true;
+            _defaultMouseVisible = Cursor.visible;
+            _defaultMouseLock = Cursor.lockState;
         }
     }
 }

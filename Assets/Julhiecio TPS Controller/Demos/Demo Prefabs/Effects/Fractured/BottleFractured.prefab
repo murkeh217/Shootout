@@ -2949,6 +2949,7 @@ GameObject:
   - component: {fileID: 7270459224682028262}
   - component: {fileID: -6491885282795835182}
   - component: {fileID: 8983381461795238955}
+  - component: {fileID: -4468085081288140315}
   m_Layer: 0
   m_Name: BottleFractured
   m_TagString: Untagged
@@ -3105,7 +3106,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2dd2ca464ee8eb24194599ee8dfd276b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AudioTag: {fileID: 11400000, guid: b7f60ffc055fd01479c79dd9351b4dff, type: 2}
   AudioSource: {fileID: -6491885282795835182}
+--- !u!114 &-4468085081288140315
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8047383364217472604}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c14ab3534fe39f41b6ddb054f8b72de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SoundDistance: 100
+  SoundTag: {fileID: 0}
+  PlayOnSpawn: 1
+  PlayOnDestroy: 0
+  PlayOnEnable: 0
+  PlayOnDisable: 0
+  RepeatRate: 0
+  MinRepeatTime: 1
+  PlayOnTriggerEnter: 0
+  PlayOnTriggerExit: 0
+  PlayOnCollisionEnter: 0
+  PlayOnCollisionExit: 0
+  IgnoreCollisionTags: []
+  SfxSource: {fileID: 0}
+  SfxLifeTime: 10
 --- !u!1 &8611723214753062745
 GameObject:
   m_ObjectHideFlags: 0

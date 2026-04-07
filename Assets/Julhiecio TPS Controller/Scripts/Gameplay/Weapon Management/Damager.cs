@@ -5,16 +5,19 @@ using JUTPS.FX;
 using JUTPS.ArmorSystem;
 using JUTPSEditor.JUHeader;
 using System.Collections.Generic;
+using JUTPS.CharacterBrain;
+using JU;
 
 namespace JUTPS
 {
     /// <summary>
-    /// A hit detector that apply damage to another collider with <see cref="JUHealth"/> or a <see cref="DamageableBodyPart"/>.
+    /// A hit detector that apply damage to another collider with <see cref="IHealth"/> or a <see cref="DamageableBodyPart"/>.
     /// </summary>
     [AddComponentMenu("JU TPS/Armor System/JU Damager")]
     public class Damager : MonoBehaviour
     {
-        private float _currentHitTime;
+        private JUCharacterController _characterOwner;
+
         private Vector3 _lastPosition;
         private Vector3 _startLocalPosition;
         private Collider _oldHit;
@@ -88,8 +91,19 @@ namespace JUTPS
             _startLocalPosition = transform.localPosition;
             Rigidbody = GetComponent<Rigidbody>();
 
+            if (transform.root)
+                _characterOwner = transform.root.GetComponentInChildren<JUCharacterController>();
+
             if (IgnoreRootColliders)
                 SetupCollidersToIgnore();
+
+            if (_characterOwner && _characterOwner.CharacterHealth != null)
+            {
+                _characterOwner.CharacterHealth.OnDeath += () =>
+                {
+                    gameObject.SetActive(false);
+                };
+            }
         }
         private void Start()
         {
@@ -114,7 +128,7 @@ namespace JUTPS
                 transform.localPosition = _startLocalPosition;
                 if (Rigidbody)
                 {
-                    Rigidbody.linearVelocity = Vector3.zero;
+                    Rigidbody.velocity = Vector3.zero;
                     Rigidbody.isKinematic = false;
                 }
             }
@@ -185,7 +199,7 @@ namespace JUTPS
 
                 if (AllCollidersToIgnore.Contains(hitCollider))
                     continue;
-                
+
                 if (TagsToDamage.Contains(hitCollider.tag))
                 {
                     IsColliding = true;
@@ -274,21 +288,34 @@ namespace JUTPS
             DamageableBodyPart bodyPart = collider.GetComponentInChildren<DamageableBodyPart>();
             float realDamage = damage;
 
+            IHealth.DamageInfo damageInfo = new IHealth.DamageInfo
+            {
+                Damage = damage,
+                HitDirection = normal,
+                HitPosition = point,
+                HitOriginPosition = transform.position,
+                DamageOwner = _characterOwner ? _characterOwner.gameObject : null
+            };
+
             if (!bodyPart)
             {
-                JUHealth health = collider.GetComponentInParent<JUHealth>();
+                IHealth health = collider.GetComponentInParent<IHealth>();
 
-                if (health)
+                if (health != null)
                 {
-                    health.DoDamage(damage);
+                    health.DoDamage(damageInfo);
                     if (ShowHitMarker)
-                        if (!health.IsDead && realDamage > 0)
-                            HitMarkerEffect.HitCheck(health.transform.tag, point, realDamage);
+                    {
+                        if (!health.IsDead && realDamage > 0 && health is MonoBehaviour healthComponent)
+                        {
+                            HitMarkerEffect.HitCheck(healthComponent.tag, point, realDamage);
+                        }
+                    }
                 }
             }
             else
             {
-                realDamage = bodyPart.DoDamage(damage);
+                realDamage = bodyPart.DoDamage(damageInfo);
                 if (ShowHitMarker)
                 {
                     if (!bodyPart.Health.IsDead && realDamage > 0)

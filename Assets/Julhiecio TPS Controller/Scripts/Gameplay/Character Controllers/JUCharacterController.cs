@@ -1,18 +1,20 @@
-﻿using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
-using JUTPS.ItemSystem;
-using JUTPS.PhysicsScripts;
+﻿using JU;
 using JUTPS.CharacterBrain;
-using JUTPS.ExtendedInverseKinematics;
+using JUTPS.ItemSystem;
 using JUTPS.JUInputSystem;
+using JUTPS.PhysicsScripts;
+using System.Collections;
+using UnityEngine;
 
 namespace JUTPS
 {
     [AddComponentMenu("JU TPS/Third Person System/Character Controllers/JU Character Controller")]
     [RequireComponent(typeof(Rigidbody), typeof(Animator), typeof(CapsuleCollider))]
-    public class JUCharacterController : JUCharacterBrain
+    public partial class JUCharacterController : JUCharacterBrain
     {
+        public JUPlayerCharacterInputAsset Inputs;
+        public int ItemToEquipOnStart;
+
         [Header("Controller Options")]
         public bool UseDefaultControllerInput = true;
         public bool AutoRun = true;
@@ -24,8 +26,11 @@ namespace JUTPS
         public bool BlockFireModeOnCursorVisible = false;
         public bool BlockFireModeOnPunching = true;
         public bool EnablePunchAttacks = true;
+        public bool EnableMeleeWeaponsAttacks = true;
+        public bool EnableShot = true;
         public bool EnableRoll = true;
-        
+        public bool EnableAim = true;
+        public bool EnableProne = true;
 
         [Header("Physical Damage")]
         public bool PhysicalDamage = true;
@@ -33,7 +38,45 @@ namespace JUTPS
         public float PhysicalDamageStartAt = 25;
         public float PhysicalDamageMultiplier = 0.8f;
         public float RagdollStartAtDamage = 10;
-        public string[] PhysicalDamageIgnoreTags = new string[] { "Player", "Enemy", "Bones", "Wall", "Bullet" };
+        public string[] PhysicalDamageIgnoreTags = new string[] { "Player", "Enemy", "Bullet" };
+
+        [Header("IK Settings")]
+        public float RightElbowAdjustWeight = 0.5f;
+        public float LeftElbowAdjustWeight = 0f;
+        public float LookAtBodyWeight = 0.5f;
+        public float HeadIKBodyWeight = 1;
+        public JUCharacterController() : base()
+        {
+            ItemToEquipOnStart = 0;
+        }
+
+        protected override void Start()
+        {
+            IEnumerator EquipeSelectedItem()
+            {
+                yield return new WaitForEndOfFrame();
+
+                if (!AllowBareHands)
+                {
+                    if (ItemToEquipOnStart <= -1 || !Inventory.HoldableItensRightHand[ItemToEquipOnStart].Unlocked)
+                    {
+                        ItemToEquipOnStart = Inventory.NextUnlockedItemLocalIndexRightHand(ItemToEquipOnStart);
+                    }
+                }
+
+                SwitchToItem(ItemToEquipOnStart);
+            }
+
+            base.Start();
+
+            StartCoroutine(EquipeSelectedItem());
+
+            if (Inputs)
+            {
+                Inputs.SetActiveInputs(true);
+            }
+        }
+
         void FixedUpdate()
         {
             if (IsDead == true || DisableAllMove == true || JUPauseGame.IsPaused) { return; }
@@ -56,7 +99,6 @@ namespace JUTPS
 
             if (IsDead) return;
 
-            DrivingCheck();
             WallAHeadCheck();
 
             if (DisableAllMove == false)
@@ -84,28 +126,58 @@ namespace JUTPS
         #region INPUTS
         public virtual void ControllerInputs()
         {
-            if (UseDefaultControllerInput == false) return;
+            if (!UseDefaultControllerInput)
+                return;
 
+            if (!Inputs)
+            {
+                Debug.LogError($"The player character {name} hasn't a {nameof(JUPlayerCharacterInputAsset)} assigned.");
+                return;
+            }
 
-            bool ShotInput = JUInput.GetButton(JUInput.Buttons.ShotButton);
-            //bool ShotInputUp = JUInput.GetButtonUp(JUInput.Buttons.ShotButton);
-            bool ShotInputDown = JUInput.GetButtonDown(JUInput.Buttons.ShotButton);
-            //bool PunchInputDown = EnablePunchAttacks ? JUInput.GetButtonDown(JUInput.Buttons.PunchButton) : false;
-            bool ReloadInput = JUInput.GetButtonDown(JUInput.Buttons.ReloadButton);
-            bool AimInput = JUInput.GetButton(JUInput.Buttons.AimingButton);
-            bool AimInputDown = JUInput.GetButtonDown(JUInput.Buttons.AimingButton);
+            // Get Input Values
+            bool ShotInput = EnableShot ? Inputs.IsShotPressed : false;
+            bool shotInputDown = EnableShot ? Inputs.IsShotTriggered : false;
+            bool meleeAttackInput = EnableMeleeWeaponsAttacks ? Inputs.IsMeleeWeaponAttackTriggered : false;
+            bool punchInputDown = EnablePunchAttacks ? Inputs.IsPunchTriggered : false;
+            bool reloadTriggered = Inputs.IsReloadTriggered;
+            bool aimInput = EnableAim ? Inputs.IsAimPressed : false;
+            bool aimInputDown = EnableAim ? Inputs.IsAimTriggered : false;
+            bool isProneTriggered = EnableProne ? Inputs.IsProneTriggered : false;
+            bool isCrouchTriggered = Inputs.IsCrouchTriggered;
+            bool isRunPressed = Inputs.IsRunPressed;
+            bool isRunPerformed = Inputs.IsRunPerformed;
+            bool isRollTriggered = Inputs.IsRollTriggered && EnableRoll;
+            bool isNextItemTriggered = Inputs.IsEquipeNextItemTriggered;
+            bool isPreviousItemTriggered = Inputs.IsEquipePreviousItemTriggered;
+            Vector2 moveAxis = Inputs.MoveAxis;
 
-            FireModeTimer(ShotInput, AimInput);
+            // Force Blocking Movement Axis Input
+            if (BlockHorizontalInput) moveAxis.x = 0;
+            if (BlockVerticalInput) moveAxis.y = 0;
 
-            if (!BlockHorizontalInput) HorizontalX = JUInput.GetAxis(JUInput.Axis.MoveHorizontal);
-            if (!BlockVerticalInput) VerticalY = JUInput.GetAxis(JUInput.Axis.MoveVertical);
+            HorizontalX = moveAxis.x;
+            VerticalY = moveAxis.y;
 
-            HorizontalX = Mathf.Clamp(HorizontalX, -1, 1);
-            VerticalY = Mathf.Clamp(VerticalY, -1, 1);
+            // Firing Mode timer
+            FireModeTimer(ShotInput, aimInput);
 
+            // Item switching
+            if (isNextItemTriggered) SwitchToNextItem();
+            if (isPreviousItemTriggered) SwitchToPreviousItem();
+            if (Inputs.IsEquipSlot1Triggered) SwitchToItemInSequentialSlot(InventorySystem.JUInventory.SequentialSlotsEnum.first);
+            if (Inputs.IsEquipSlot2Triggered) SwitchToItemInSequentialSlot(InventorySystem.JUInventory.SequentialSlotsEnum.second);
+            if (Inputs.IsEquipSlot3Triggered) SwitchToItemInSequentialSlot(InventorySystem.JUInventory.SequentialSlotsEnum.third);
+            if (Inputs.IsEquipSlot4Triggered) SwitchToItemInSequentialSlot(InventorySystem.JUInventory.SequentialSlotsEnum.fourth);
+            if (Inputs.IsEquipSlot5Triggered) SwitchToItemInSequentialSlot(InventorySystem.JUInventory.SequentialSlotsEnum.fifth);
+            if (Inputs.IsEquipSlot6Triggered) SwitchToItemInSequentialSlot(InventorySystem.JUInventory.SequentialSlotsEnum.sixth);
+            if (Inputs.IsEquipSlot7Triggered) SwitchToItemInSequentialSlot(InventorySystem.JUInventory.SequentialSlotsEnum.seventh);
+            if (Inputs.IsEquipSlot8Triggered) SwitchToItemInSequentialSlot(InventorySystem.JUInventory.SequentialSlotsEnum.eighth);
+            if (Inputs.IsEquipSlot9Triggered) SwitchToItemInSequentialSlot(InventorySystem.JUInventory.SequentialSlotsEnum.ninth);
+            if (Inputs.IsEquipSlot10Triggered) SwitchToItemInSequentialSlot(InventorySystem.JUInventory.SequentialSlotsEnum.third);
 
             //Crouch
-            if (JUInput.GetButtonDown(JUInput.Buttons.CrouchButton))
+            if (isCrouchTriggered)
             {
                 if (IsRunning && AutoRun == true)
                 {
@@ -123,7 +195,7 @@ namespace JUTPS
             }
 
             //Prone
-            if (JUInput.GetButtonDown(JUInput.Buttons.ProneButton))
+            if (isProneTriggered)
             {
                 if (IsProne == false)
                 {
@@ -143,13 +215,13 @@ namespace JUTPS
             }
 
             //Get Up
-            if (IsCrouched == true && JUInput.GetButton(JUInput.Buttons.RunButton))
+            if (IsCrouched == true && isRunPressed)
             {
                 _GetUp();
             }
 
             //Jump
-            if (JUInput.GetButton(JUInput.Buttons.JumpButton) && IsJumping == false)
+            if (Inputs.IsJumpTriggered && IsJumping == false)
             {
                 _Jump();
             }
@@ -158,13 +230,13 @@ namespace JUTPS
 
 
             //Roll
-            if (JUInput.GetButtonDown(JUInput.Buttons.RollButton) && EnableRoll)
+            if (isRollTriggered)
             {
                 _Roll();
             }
 
             //Running
-            if (JUInput.GetButton(JUInput.Buttons.RunButton))
+            if (isRunPressed)
             {
                 if (WalkOnRunButton)
                 {
@@ -201,7 +273,7 @@ namespace JUTPS
             //Debug.Log("Start Sprinting");
             //}
             //Force stop sprinting
-            if (JUInput.GetButtonUp(JUInput.Buttons.RunButton) && SprintOnRunButton == true)
+            if (isRunPerformed && SprintOnRunButton == true)
             {
                 IsSprinting = false;
             }
@@ -214,7 +286,7 @@ namespace JUTPS
             //Auto Run
             if (WalkOnRunButton)
             {
-                if (AutoRun && JUInput.GetButton(JUInput.Buttons.RunButton) == false && IsCrouched == false)
+                if (AutoRun && isRunPressed == false && IsCrouched == false)
                 {
                     if (Mathf.Abs(HorizontalX) > 0.5f || Mathf.Abs(VerticalY) > 0.5f)
                     {
@@ -236,7 +308,7 @@ namespace JUTPS
             //Mobile Run Button Auto-Run
             if (JUGameManager.IsMobileControls && BlockVerticalInput == false)
             {
-                if (JUInput.GetButton(JUInput.Buttons.RunButton) && JUInput.GetAxis(JUInput.Axis.MoveHorizontal) == 0 && JUInput.GetAxis(JUInput.Axis.MoveVertical) == 0)
+                if (isRunPressed && HorizontalX == 0 && VerticalY == 0)
                 {
                     if (SprintOnRunButton)
                     {
@@ -261,14 +333,14 @@ namespace JUTPS
             //All Items Using. Tags: Weapon, Melee, Gun, Shot, Reload, Aim
             if (Inventory != null)
             {
-                DefaultUseOfAllItems(ShotInput, ShotInputDown, Inventory.IsPickingItem ? false : ReloadInput, AimInput, AimInputDown, EnablePunchAttacks ? ShotInputDown : false);
+                DefaultUseOfAllItems(ShotInput, meleeAttackInput, shotInputDown, Inventory.IsPickingItem ? false : reloadTriggered, aimInput, aimInputDown, punchInputDown);
             }
             else
             {
-                DefaultUseOfAllItems(ShotInput, ShotInputDown, ReloadInput, AimInput, AimInputDown, EnablePunchAttacks ? ShotInputDown : false);
+                DefaultUseOfAllItems(ShotInput, meleeAttackInput, shotInputDown, reloadTriggered, aimInput, aimInputDown, punchInputDown);
             }
             // >>> Firing Mode Trigger
-            if ((ShotInput || AimInput) && FiringMode == false && IsRolling == false && IsDriving == false && IsReloading == false && LocomotionMode != MovementMode.JuTpsClassic)
+            if ((ShotInput || aimInput) && FiringMode == false && IsRolling == false && IsDriving == false && IsReloading == false && LocomotionMode != MovementMode.JuTpsClassic)
             {
                 if ((BlockFireModeOnPunching && IsPunching) == false)
                 {
@@ -277,6 +349,12 @@ namespace JUTPS
                 }
             }
             if (BlockFireModeOnPunching && (IsPunching || !IsItemEquiped))
+            {
+                FiringMode = false;
+                FiringModeIK = false;
+            }
+
+            if (!EnablePunchAttacks && !HoldableItemInUseRightHand)
             {
                 FiringMode = false;
                 FiringModeIK = false;
@@ -490,7 +568,6 @@ namespace JUTPS
                     IsRagdolled = true;
                     IsAiming = false;
                     FiringMode = false;
-                    IsDriving = false;
                     ArmsWeightIK = 0;
                     LeftHandWeightIK = 0;
                     RightHandWeightIK = 0;
@@ -581,7 +658,10 @@ namespace JUTPS
             VerticalY = 0;
             VelocityMultiplier = 0;
             DisableAllMove = true;
-            FiringMode = false;
+
+            if (LocomotionMode != MovementMode.AwaysInFireMode)
+                FiringMode = false;
+
             CanMove = false;
 
             if (duration > 0) Invoke(nameof(enableMove), duration);
@@ -609,29 +689,29 @@ namespace JUTPS
             if (IsItemEquiped)
             {
                 //Weapon Orientation with camera
-                if (MyCamera != null)
+                if (MyPivotCamera != null)
                 {
-                    if (WeaponInUseRightHand != null)
+                    if (RightHandWeapon != null)
                     {
-                        Vector3 orientation = (LookAtPosition != Vector3.zero) ? GetCurrentWeaponLookDirection() : MyCamera.transform.forward;
-                        WeaponInUseRightHand.SetWeaponOrientation(MyCamera.transform.position, orientation);
+                        Vector3 orientation = (LookAtPosition != Vector3.zero) ? GetCurrentWeaponLookDirection() : MyPivotCamera.mCamera.transform.forward;
+                        RightHandWeapon.SetWeaponOrientation(MyPivotCamera.mCamera.transform.position, orientation);
                     }
-                    if (WeaponInUseLeftHand != null)
+                    if (LeftHandWeapon != null)
                     {
-                        Vector3 orientation = (LookAtPosition != Vector3.zero) ? GetCurrentWeaponLookDirection() : MyCamera.transform.forward;
-                        WeaponInUseLeftHand.SetWeaponOrientation(MyCamera.transform.position, orientation);
+                        Vector3 orientation = (LookAtPosition != Vector3.zero) ? GetCurrentWeaponLookDirection() : MyPivotCamera.mCamera.transform.forward;
+                        LeftHandWeapon.SetWeaponOrientation(MyPivotCamera.mCamera.transform.position, orientation);
                     }
                 }
                 else
                 {
                     //Weapon orientation without camera
-                    if (WeaponInUseRightHand != null)
+                    if (RightHandWeapon != null)
                     {
-                        WeaponInUseRightHand.SetWeaponOrientation(Vector3.zero, GetCurrentWeaponLookDirection());
+                        RightHandWeapon.SetWeaponOrientation(Vector3.zero, GetCurrentWeaponLookDirection());
                     }
-                    if (WeaponInUseLeftHand != null)
+                    if (LeftHandWeapon != null)
                     {
-                        WeaponInUseLeftHand.SetWeaponOrientation(Vector3.zero, GetCurrentWeaponLookDirection());
+                        LeftHandWeapon.SetWeaponOrientation(Vector3.zero, GetCurrentWeaponLookDirection());
                     }
                 }
             }
@@ -920,24 +1000,40 @@ namespace JUTPS
             // >>> Physical Damage System
             if (PhysicalDamage == false) return;
 
-            if (AI.JUCharacterArtificialInteligenceBrain.TagMatches(other.collider.gameObject.tag, PhysicalDamageIgnoreTags)) return;
-
+            for (int i = 0; i < PhysicalDamageIgnoreTags.Length; i++)
+            {
+                if (other.collider.CompareTag(PhysicalDamageIgnoreTags[i]))
+                    return;
+            }
 
             if (other.gameObject.TryGetComponent(out Rigidbody rbOtherPhysicObject))
             {
-                Vector3 contactDirection = (other.contacts[0].point - transform.position).normalized;
+                Vector3 contactPoint = other.contacts[0].point;
+                Vector3 contactDirection = (contactPoint - transform.position).normalized;
+
+                Vector3 otherRbVelocity = rbOtherPhysicObject.velocity;
+                Vector3 otherRbMoveDirection = otherRbVelocity.normalized;
 
                 // -1 = a physical object is moving into character direction
                 // 1 = a physical object is moving in character oposite direction
-                float CollisionPressure = Vector3.Dot(contactDirection, rbOtherPhysicObject.linearVelocity.normalized);
+                float CollisionPressure = Vector3.Dot(contactDirection, otherRbMoveDirection);
+
                 //Debug.Log(gameObject.name + " ◄ " + rbOtherPhysicObject.name + " ] Collision Pressure = " + CollisionPressure.ToString());
                 if (CollisionPressure > -0.1) return;
-                float physicalDamage = PhysicalDamageMultiplier * (rbOtherPhysicObject.linearVelocity.magnitude / 20 * rbOtherPhysicObject.mass);
+                float physicalDamage = PhysicalDamageMultiplier * (rbOtherPhysicObject.velocity.magnitude / 20 * rbOtherPhysicObject.mass);
 
                 // Do physical damage
                 if (physicalDamage > PhysicalDamageStartAt)
                 {
-                    TakeDamage(physicalDamage, other.contacts[0].point);
+                    IHealth.DamageInfo damageInfo = new IHealth.DamageInfo
+                    {
+                        Damage = physicalDamage,
+                        HitDirection = otherRbMoveDirection.magnitude > 0.9f ? -otherRbMoveDirection : contactDirection,
+                        HitPosition = contactPoint,
+                        HitOriginPosition = contactPoint,
+                        DamageOwner = rbOtherPhysicObject.gameObject
+                    };
+                    TakeDamage(damageInfo);
 
                     //Hit damage on screen
                     //FX.HitMarkerEffect.HitCheck("Skin", "Player", other.contacts[0].point, physicalDamage);
@@ -967,20 +1063,25 @@ namespace JUTPS
                 //If you have problems with the elbow ik on your left arm, uncomment the line below
                 //LeftHandToRespectiveIKPosition(LeftHandWeightIK, LeftHandWeightIK / 1.2f);
 
-                LeftHandToRespectiveIKPosition(LeftHandWeightIK, 0);
-                RightHandToRespectiveIKPosition(RightHandWeightIK, RightHandWeightIK / 1.2f);
+                LeftHandToRespectiveIKPosition(LeftHandWeightIK, LeftHandWeightIK * LeftElbowAdjustWeight);
+                RightHandToRespectiveIKPosition(RightHandWeightIK, RightHandWeightIK * RightElbowAdjustWeight);
 
                 Vector3 LookingPosition = GetLookPosition();
-                float BodyWeight = (IsProne) ? 0.1f : 0.3f;
+
+                // Body Look At IK
+                float ProneBodyWeight = (LookAtBodyWeight == 0) ? 0 : 0.1f;
+                float BodyWeight = (IsProne) ? ProneBodyWeight : LookAtBodyWeight;
 
                 float LookingIntensity = Vector3.Dot(transform.forward, (LookingPosition - transform.position).normalized);
-                LookAtIK(LookingPosition, LookingIntensity * LookWeightIK, BodyWeight, 0.6f);
+                LookAtIK(LookingPosition, LookingIntensity * LookWeightIK, BodyWeight, HeadIKBodyWeight);
             }
         }
+
         private void OnAnimatorMove()
         {
             ApplyRootMotionOnLocomotion();
         }
+
     }
 
 }

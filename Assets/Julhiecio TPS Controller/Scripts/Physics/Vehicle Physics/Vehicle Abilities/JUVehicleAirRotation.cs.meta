@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 516ad6eb6589cc74080b1cde159f9c6a
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 251334
+  packageName: JU TPS 3 - Third Person Shooter GameKit + Vehicle Physics
+  packageVersion: 3.3.7
+  assetPath: Assets/Julhiecio TPS Controller/Scripts/Physics/Vehicle Physics/Vehicle
+    Abilities/JUVehicleAirRotation.cs
+  uploadId: 892152

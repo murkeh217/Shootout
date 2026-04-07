@@ -4,7 +4,7 @@ using UnityEngine;
 namespace JUTPS.CameraSystems
 {
 
-    [AddComponentMenu("JU TPS/Third Person System/Cameras/Camera State Trigger")]
+    [AddComponentMenu("JU TPS/Cameras/Camera State System/Camera State Trigger")]
     public class CameraStateTrigger : MonoBehaviour
     {
         public float TransitionSpeed = 8;

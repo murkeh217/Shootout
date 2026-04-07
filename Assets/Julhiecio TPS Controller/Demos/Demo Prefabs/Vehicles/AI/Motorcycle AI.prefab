@@ -496,9 +496,10 @@ GameObject:
   - component: {fileID: 1266881695039230102}
   - component: {fileID: 3909069116297512625}
   - component: {fileID: 1984610531309921137}
+  - component: {fileID: 1310081959}
   m_Layer: 8
   m_Name: Motorcycle AI
-  m_TagString: Untagged
+  m_TagString: Vehicle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -529,6 +530,7 @@ Transform:
   - {fileID: 1266881694036665081}
   - {fileID: 1266881694967913863}
   - {fileID: 2969024231737859812}
+  - {fileID: 4453821097649885496}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -586,7 +588,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f525cccc7e16c92459a0618cb94ed903, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  UseDefaultInputs: 0
+  IsOn: 1
+  ControlsEnabled: 1
+  UsePlayerInputs: 0
+  PlayerInputs: {fileID: 11400000, guid: be455aa438e8dc04899a8578b3ce7ef1, type: 2}
   Engine:
     MaxForwardSpeed: 30
     MaxRearSpeed: 20
@@ -650,8 +655,6 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   RotateToUpInAirSpeed: 1
-  IsOn: 1
-  ControlsEnabled: 1
   FrontWheel:
     MaxSteerAngle: 35
     ThrottleIntensity: 0
@@ -675,7 +678,7 @@ MonoBehaviour:
     IsOverturned: 0
   Inclination:
     Sensitive: 3
-    Speed: 1
+    Speed: 2.5
     MaxAngle: 45
     StopedInclination: -10
     OnGroundDrag: 5
@@ -704,11 +707,11 @@ MonoBehaviour:
   DistanceToContinuePath: 5
   VehicleDesacelerationIntensity: 3
   FrontCheck:
-    OriginPosition: {x: 0, y: 0.71, z: 0.83}
-    RayMaxDistance: 1.7
+    OriginPosition: {x: 0, y: 0.59, z: 0}
+    RayMaxDistance: 1.8
     RayLayerMask:
       serializedVersion: 2
-      m_Bits: 68097
+      m_Bits: 68353
     IsCollided: 0
   CheckNearestPointOnPath: 1
   OnEndPath: 0
@@ -764,7 +767,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57b76bb4d21f5654aae48bafd91b9a5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CharactersCanGetVehicle: 1
   CharacterExitingPosition: {x: -1, y: 0, z: 0}
   InverseKinematicTargetPositions:
     CharacterPosition: {fileID: 2969024231737859812}
@@ -778,6 +780,22 @@ MonoBehaviour:
     LookAtDirectionWeight: 1
     HintMovementWeight: 1
     FootPlacement: 1
+--- !u!208 &1310081959
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2113797779687943624}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 0.5, y: 0.5, z: 0.5}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 0
+  m_Center: {x: 0, y: 0, z: 0}
+  m_TimeToStationary: 0.5
 --- !u!1 &2218573258006211172
 GameObject:
   m_ObjectHideFlags: 0
@@ -1334,6 +1352,67 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &6045254250262121074
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4453821097649885496}
+  - component: {fileID: 1829837358137455333}
+  - component: {fileID: 2646976265871024477}
+  m_Layer: 2
+  m_Name: VehicleArea
+  m_TagString: Interactable
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4453821097649885496
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6045254250262121074}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.535, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1593824898612950898}
+  m_RootOrder: 15
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &1829837358137455333
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6045254250262121074}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &2646976265871024477
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6045254250262121074}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d249b4cc7322e94183e92bc94d426c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  InteractionEnabled: 1
+  EnterExitVehicle:
+    MaxVehicleSpeedToEnter: 5
+    MaxCharacterSpeedToEnter: 5
 --- !u!1 &6227369450178123622
 GameObject:
   m_ObjectHideFlags: 0

@@ -55,7 +55,8 @@ namespace JUTPS
 
         [JUReadOnly("AdvancedMode")]
         public bool SmoothIKTransition = true;
-
+        public float SpeedInTransition = 6;
+        public float SpeedOutTransition = 6;
         [JUReadOnly("AdvancedMode")] public float FootHeightMultiplier = 0.6f;
 
         [Range(0, 1)]
@@ -117,6 +118,9 @@ namespace JUTPS
         [JUReadOnly("AdvancedMode")] public float GroundCheckRadius = 0.1f;
         void Start()
         {
+            LeftFoot = null;
+            RightFoot = null;
+
             Invoke(nameof(StartFootPlacement), 0.1f);
             GetFootPlacementDependencies();
             Invoke(nameof(GetFootPlacementDependencies), 0.01f);
@@ -292,11 +296,11 @@ namespace JUTPS
             //>>> Smooth Transition to IK/FK
             if (SmoothIKTransition)
             {
-                TransitionIKtoFKWeight = Mathf.Lerp(TransitionIKtoFKWeight, 1, 5 * Time.deltaTime);
+                TransitionIKtoFKWeight = Mathf.Lerp(TransitionIKtoFKWeight, 1, SpeedInTransition * Time.deltaTime);
             }
             else
             {
-                TransitionIKtoFKWeight = Mathf.Lerp(TransitionIKtoFKWeight, 0, 5 * Time.deltaTime);
+                TransitionIKtoFKWeight = Mathf.Lerp(TransitionIKtoFKWeight, 0, SpeedOutTransition * Time.deltaTime);
             }
         }
 
@@ -379,7 +383,14 @@ namespace JUTPS
             return NewAnimationBodyPosition;
         }
 
-
+        public void FootIKSmoothDisable(bool enabled)
+        {
+            SmoothIKTransition = enabled;
+        }
+        public void IKBodyPlacingDisable(bool enabled)
+        {
+            EnableDynamicBodyPlacing = enabled;
+        }
         private void OnAnimatorIK(int layerIndex)
         {
             if (Vector3.Angle(transform.up, Vector3.up) > 30 && EnableFootPlacement)

@@ -21,7 +21,7 @@ MonoBehaviour:
     value: 2
   threshold:
     overrideState: 1
-    value: 1.2
+    value: 1
   softKnee:
     overrideState: 0
     value: 0.571
@@ -38,8 +38,8 @@ MonoBehaviour:
     overrideState: 0
     value: {r: 1, g: 1, b: 1, a: 1}
   fastMode:
-    overrideState: 1
-    value: 1
+    overrideState: 0
+    value: 0
   dirtTexture:
     overrideState: 0
     value: {fileID: 0}
@@ -102,7 +102,7 @@ MonoBehaviour:
     value: 1
   shutterAngle:
     overrideState: 1
-    value: 300
+    value: 360
   sampleCount:
     overrideState: 1
     value: 32

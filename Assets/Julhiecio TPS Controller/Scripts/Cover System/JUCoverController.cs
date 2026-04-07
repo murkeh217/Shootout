@@ -1,11 +1,10 @@
+using JUTPS.CameraSystems;
+using JUTPS.ExtendedInverseKinematics;
+using JUTPSEditor.JUHeader;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
-
-using JUTPS.ExtendedInverseKinematics;
-using JUTPSEditor.JUHeader;
-using JUTPS.CameraSystems;
 
 namespace JUTPS.CoverSystem
 {
@@ -46,13 +45,13 @@ namespace JUTPS.CoverSystem
         [JUHeader("FireMode Options")]
         public float FireModeDurationInCover = 0.1f;
         private float StartFireModeDuration;
-        
+
         [JUHeader("Events")]
         public UnityEvent OnCover;
         public UnityEvent OnExitCover;
         private bool onExitCoverCalled;
 
-        
+
         private bool isSwitchingCoverTrigger;
         private float switchingCoverProgression;
         private float toCornerProgression;
@@ -86,13 +85,18 @@ namespace JUTPS.CoverSystem
         }
         private void FixedUpdate()
         {
-           
+
             if (IsCovering == false) return;
 
             //Move cover target position
             if (!TPSCharacter.WallAHead)
             {
-                movementVector = new Vector3(JUInputSystem.JUInput.GetAxis(JUInputSystem.JUInput.Axis.MoveHorizontal), 0, JUInputSystem.JUInput.GetAxis(JUInputSystem.JUInput.Axis.MoveVertical));
+                if (TPSCharacter.Inputs)
+                {
+                    Vector2 moveAxis = TPSCharacter.Inputs.MoveAxis;
+                    movementVector = new Vector3(moveAxis.x, 0, moveAxis.y);
+                }
+
                 if (TPSCharacter.FiringMode)
                 {
                     //Fire Mode Covering Movement
@@ -119,9 +123,9 @@ namespace JUTPS.CoverSystem
             }
             if (isSwitchingCoverTrigger)
             {
-                switchingCoverProgression = Mathf.Lerp(switchingCoverProgression, 2, 2*SneakSpeed * Time.deltaTime);
+                switchingCoverProgression = Mathf.Lerp(switchingCoverProgression, 2, 2 * SneakSpeed * Time.deltaTime);
                 transform.position = Vector3.Lerp(oldCharacterPosition, targetPosition, switchingCoverProgression);
-                rb.linearVelocity = Vector3.zero;
+                rb.velocity = Vector3.zero;
                 TPSCharacter.VelocityMultiplier = 1;
 
                 if (switchingCoverProgression >= 1)
@@ -152,7 +156,7 @@ namespace JUTPS.CoverSystem
             }
 
             //Press Interaction Button to Cover
-            if (JUInputSystem.JUInput.GetButtonDown(JUInputSystem.JUInput.Buttons.EnterVehicleButton) && CurrentCoverTrigger != null && AutoMode == false)
+            if (TPSCharacter.Inputs && TPSCharacter.Inputs.IsInteractTriggered && CurrentCoverTrigger != null && AutoMode == false)
             {
                 if (IsCovering == false)
                 {
@@ -205,7 +209,7 @@ namespace JUTPS.CoverSystem
             if (IsCovering)
             {
                 TPSCharacter.VelocityMultiplier = Mathf.Clamp(TPSCharacter.VelocityMultiplier, 0, 0.8f);
-                TPSCharacter.rb.linearVelocity = Vector3.zero;
+                TPSCharacter.rb.velocity = Vector3.zero;
                 TPSCharacter.IsSprinting = false;
 
                 Quaternion desiredRotation = Quaternion.LookRotation(-CurrentCoverTrigger.transform.forward, TPSCharacter.UpDirection == Vector3.zero ? Vector3.up : TPSCharacter.UpDirection);
@@ -292,7 +296,7 @@ namespace JUTPS.CoverSystem
             anim.SetBool("Cover", IsCovering);
             anim.SetBool("CoverLeftSide", IsLeftSide);
 
-            if(TPSCharacter.FiringMode && IsCovering)
+            if (TPSCharacter.FiringMode && IsCovering)
             {
                 //TPSCharacter.SetMoveInput(0,0);
                 if (TPSCharacter.FiringMode && TPSCharacter.IsCrouched) TPSCharacter._GetUp();
@@ -311,7 +315,7 @@ namespace JUTPS.CoverSystem
                 moveAnimationSpeedValue = TPSCharacter.VelocityMultiplier;
             }
         }
-        
+
         private void EnterCoverAnimationState()
         {
             if (IsCovering) onExitCoverCalled = false;
@@ -333,7 +337,7 @@ namespace JUTPS.CoverSystem
 
             if (IsCrouchCover == false && TPSCharacter.IsCrouched == true) TPSCharacter._GetUp();
 
-            
+
 
         }
         protected void OnExitingCover()

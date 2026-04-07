@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using JUTPSActions;
+using UnityEngine.InputSystem;
 namespace JUTPS.ActionScripts
 {
     [AddComponentMenu("JU TPS/Third Person System/Additionals/Aim On Mouse Position")]
@@ -22,7 +23,11 @@ namespace JUTPS.ActionScripts
                 TPSCharacter.LookAtPosition = AimPosition;
                 return;
             }
-            Vector2 mousePosition = JUInputSystem.JUInput.GetMousePosition();
+            Vector2 mousePosition = Vector2.zero;
+            if (Mouse.current != null)
+            {
+                mousePosition = Mouse.current.position.value;
+            }
             if (TwoDimensional)
             {
                 //Create a ray on mouse position

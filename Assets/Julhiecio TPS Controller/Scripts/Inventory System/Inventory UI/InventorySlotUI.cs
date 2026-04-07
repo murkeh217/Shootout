@@ -1,14 +1,11 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-
-using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.EventSystems;
-using JUTPS.ArmorSystem;
-using JUTPS.WeaponSystem;
-
+﻿using JUTPS.ArmorSystem;
 using JUTPS.ItemSystem;
+using JUTPS.WeaponSystem;
 using JUTPSEditor.JUHeader;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace JUTPS.InventorySystem.UI
 {
@@ -20,7 +17,7 @@ namespace JUTPS.InventorySystem.UI
         private int mSlotIndex = 0;
 
         [JUHeader("Settings")]
-        public JUInventory inventory;
+        [SerializeField] private JUInventory inventory;
         public int ItemIDToDraw = -2;
 
         [JUHeader("Sequential Item Switch")]
@@ -39,7 +36,7 @@ namespace JUTPS.InventorySystem.UI
         public GameObject Outline;
 
         [JUHeader("Options Settings")]
-        public bool EnableOptions = true;
+        public bool EnableOptionsPanel = true;
         public bool AutoEquipOnDrop = false;
         public bool IsLootSlot = false;
 
@@ -59,6 +56,18 @@ namespace JUTPS.InventorySystem.UI
 
         public JUItem[] RespectiveItemList;
         private JUItem slotItem;
+
+        public JUInventory Inventory
+        {
+            get
+            {
+                if (!inventory)
+                    GetDependences();
+
+                return inventory;
+            }
+        }
+
         private void Awake()
         {
             if (EquipButton != null) EquipButton.onClick.AddListener(Equip);
@@ -69,23 +78,32 @@ namespace JUTPS.InventorySystem.UI
 
             if (DropButton != null) DropButton.onClick.AddListener(Drop);
 
+            GetDependences();
         }
         private void Start()
         {
-            inventoryManager = gameObject.GetComponentInParent<InventoryUIManager>();
-            inventory = inventoryManager.TargetInventory;
-            canvas = GetComponent<Canvas>();
-
-            RespectiveItemList = inventory.AllItems;
-
             slotItem = CurrentSlotItem();
-            mSlotIndex = inventoryManager.Slots.IndexOf(this) == -1 ? 0 : inventoryManager.Slots.IndexOf(this);
-
             RefreshSlot();
             DisableOverriding();
+
+            RespectiveItemList = Inventory.AllItems;
+            mSlotIndex = inventoryManager.Slots.IndexOf(this) == -1 ? 0 : inventoryManager.Slots.IndexOf(this);
         }
         private void OnDisable() => Outline.SetActive(false);
         private void OnEnable() => RefreshSlot();
+
+        private void GetDependences()
+        {
+            if (!inventoryManager)
+                inventoryManager = gameObject.GetComponentInParent<InventoryUIManager>();
+
+            if (!inventory)
+                inventory = inventoryManager.TargetInventory;
+
+            if (!canvas)
+                canvas = GetComponent<Canvas>();
+        }
+
         public JUItem CurrentSlotItem()
         {
             if (inventory == null)
@@ -117,7 +135,7 @@ namespace JUTPS.InventorySystem.UI
         public void ShowOptions()
         {
             RefreshSlot();
-            if (ItemIDToDraw < 0 || EnableOptions == false) { OptionsPanel.SetActive(false); return; }
+            if (ItemIDToDraw < 0 || EnableOptionsPanel == false) { OptionsPanel.SetActive(false); return; }
 
             OptionsPanel.SetActive(true);
             if (slotItem != null)
@@ -160,6 +178,10 @@ namespace JUTPS.InventorySystem.UI
 
         public void RefreshSlot()
         {
+            if (IsItemAllowedOnThisSlot(CurrentSlotItem()) == false)
+            {
+                ClearSlot(this);
+            }
             //Get empty slot sprite
             if (EmptySlotSprite == null) EmptySlotSprite = SlotItemImage.sprite;
 
@@ -198,6 +220,8 @@ namespace JUTPS.InventorySystem.UI
             }
             //_______________________________________________________________
 
+            IsEmpty = false;
+
             //Empty
             if (ItemQuantityText != null) ItemQuantityText.gameObject.SetActive(false);
 
@@ -218,7 +242,6 @@ namespace JUTPS.InventorySystem.UI
             {
                 SlotHealthBar.gameObject.SetActive(false);
                 SlotItemImage.sprite = EmptySlotSprite;
-                IsEmpty = false;
                 return;
             }
 
@@ -251,14 +274,14 @@ namespace JUTPS.InventorySystem.UI
         {
             HideOptions();
             inventory.EquipItem(ItemIDToDraw);
-            Debug.Log("Equiped " + slotItem.name);
+            if (slotItem != null) Debug.Log("Equiped " + slotItem.name);
         }
         public void Unequip()
         {
             HideOptions();
             inventory.UnequipItem(ItemIDToDraw);
             RefreshSlot();
-            if (slotItem != null) Debug.Log("Unequiped " + slotItem.name);
+            if (slotItem != null) Debug.Log("Slot item unequiped: " + slotItem.name);
         }
         public void Use()
         {
@@ -414,7 +437,7 @@ namespace JUTPS.InventorySystem.UI
 
                     inventoryManager.RefreshAllSlots();
 
-                    if (AutoEquipOnDrop && !EnableOptions)
+                    if (AutoEquipOnDrop && !EnableOptionsPanel)
                     {
                         this.Equip();
                     }
@@ -433,7 +456,7 @@ namespace JUTPS.InventorySystem.UI
                         TransferSlotData(DropedSlotData, this);
                         inventoryManager.RefreshAllSlots();
 
-                        if (AutoEquipOnDrop && !EnableOptions)
+                        if (AutoEquipOnDrop)
                         {
                             this.Equip();
                         }
@@ -449,6 +472,24 @@ namespace JUTPS.InventorySystem.UI
 
             Debug.Log("On Droped");
         }
+
+        public void SetItemOnSlot(JUItem item)
+        {
+            GetDependences();
+
+            if (!IsItemAllowedOnThisSlot(item))
+                return;
+
+            if (SetSequentialOnDrop)
+                inventory.SetSequentialSlotItem(SequentialToDraw, item);
+
+            ItemIDToDraw = JUInventory.GetGlobalItemSwitchID(item, inventory);
+            slotItem = item;
+            inventoryManager.RefreshAllSlots();
+            if (AutoEquipOnDrop && !EnableOptionsPanel)
+                Equip();
+        }
+
         private void PickAndUnlockLootItem(string itemName, JUInventory lootInventory)
         {
             if (itemName == "") return;

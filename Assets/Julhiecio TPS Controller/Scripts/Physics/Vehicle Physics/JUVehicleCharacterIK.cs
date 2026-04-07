@@ -70,7 +70,7 @@ namespace JUTPS.VehicleSystem
             public bool FootPlacement;
 
             /// <summary>
-            /// Create a class that contains all character IK settings to drive a <see cref="Vehicle"/>.
+            /// Create a class that contains all character IK settings to drive a <see cref="JUVehicle"/>.
             /// </summary>
             public DrivingProceduralAnimationWeights()
             {
@@ -81,11 +81,6 @@ namespace JUTPS.VehicleSystem
                 HintMovementWeight = 1;
             }
         }
-
-        /// <summary>
-        /// If true, any character with <see cref="JUTPS.ActionScripts.DriveVehicles"/> can get this vehicle and drive if the <see cref="Vehicle"/> controls are enabled.
-        /// </summary>
-        public bool CharactersCanGetVehicle;
 
         /// <summary>
         /// The position to exit from the vehicle.
@@ -111,19 +106,17 @@ namespace JUTPS.VehicleSystem
         public JUVehicleCharacterIK()
         {
             CharacterExitingPosition = Vector3.left;
-            CharactersCanGetVehicle = true;
-
             InverseKinematicTargetPositions = new IKTargetPositions();
             AnimationWeights = new DrivingProceduralAnimationWeights();
         }
 
         private void OnDrawGizmos()
         {
-            Vehicle.VehicleGizmo.DrawVector3Position(CharacterExitingPosition, transform, "Exit Position", Color.green);
+            JUVehicle.VehicleGizmo.DrawVector3Position(CharacterExitingPosition, transform, "Exit Position", Color.green);
         }
 
         /// <summary>
-        /// Return the character exit position from the <see cref="Vehicle"/>.
+        /// Return the character exit position from the <see cref="JUVehicle"/>.
         /// </summary>
         /// <param name="groundLayer"></param>
         /// <returns></returns>

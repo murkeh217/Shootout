@@ -13,8 +13,34 @@ namespace JUTPS.CustomEditors
     public class WeaponComponentEditor : Editor
     {
         //Settings Areas
-        public bool WeaponSettings, Precision, Shooting, Wield, ProceduralAnimations, IKSettings, Audio;
+        public bool WeaponSettings, Precision, Shooting, Wield, ProceduralAnimations, IKSettings, Audio, Events;
         Weapon w;
+
+        private const string PrefKeyPrefix = "JUTPS_WeaponEditor_";
+
+        private void OnEnable()
+        {
+            WeaponSettings = EditorPrefs.GetBool(PrefKeyPrefix + "WeaponSettings", false);
+            Precision = EditorPrefs.GetBool(PrefKeyPrefix + "Precision", false);
+            Shooting = EditorPrefs.GetBool(PrefKeyPrefix + "Shooting", false);
+            Wield = EditorPrefs.GetBool(PrefKeyPrefix + "Wield", false);
+            ProceduralAnimations = EditorPrefs.GetBool(PrefKeyPrefix + "ProceduralAnimations", false);
+            IKSettings = EditorPrefs.GetBool(PrefKeyPrefix + "IKSettings", false);
+            Audio = EditorPrefs.GetBool(PrefKeyPrefix + "Audio", false);
+            Events = EditorPrefs.GetBool(PrefKeyPrefix + "Events", false);
+        }
+
+        private void OnDisable()
+        {
+            EditorPrefs.SetBool(PrefKeyPrefix + "WeaponSettings", WeaponSettings);
+            EditorPrefs.SetBool(PrefKeyPrefix + "Precision", Precision);
+            EditorPrefs.SetBool(PrefKeyPrefix + "Shooting", Shooting);
+            EditorPrefs.SetBool(PrefKeyPrefix + "Wield", Wield);
+            EditorPrefs.SetBool(PrefKeyPrefix + "ProceduralAnimations", ProceduralAnimations);
+            EditorPrefs.SetBool(PrefKeyPrefix + "IKSettings", IKSettings);
+            EditorPrefs.SetBool(PrefKeyPrefix + "Audio", Audio);
+            EditorPrefs.SetBool(PrefKeyPrefix + "Events", Events);
+        }
 
         //Inspector Draw
         public override void OnInspectorGUI()
@@ -47,6 +73,9 @@ namespace JUTPS.CustomEditors
 
                 Audio = GUILayout.Toggle(Audio, "Audios", JUTPSEditor.CustomEditorStyles.Toolbar());
                 AudioVariables(w);
+
+                Events = GUILayout.Toggle(Events, "Events", JUTPSEditor.CustomEditorStyles.Toolbar());
+                EventVariables(w);
             }
 
             serializedObject.ApplyModifiedProperties();
@@ -202,6 +231,14 @@ namespace JUTPS.CustomEditors
             }
         }
 
+        public void EventVariables(Weapon w)
+        {
+            if (Events)
+            {
+                var ShotEvent = serializedObject.FindProperty(nameof(w.OnShot));
+                EditorGUILayout.PropertyField(ShotEvent);
+            }
+        }
 
         //Scene View Handles
         private void OnSceneGUI()

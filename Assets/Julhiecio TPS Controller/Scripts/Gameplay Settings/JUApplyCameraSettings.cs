@@ -6,6 +6,7 @@ namespace JUTPS.GameSettings
     /// <summary>
     /// Apply the camera settings with <seealso cref="JUGameSettings"/>.
     /// </summary>
+    [DisallowMultipleComponent]
     public class JUApplyCameraSettings : MonoBehaviour
     {
         /// <summary>
@@ -15,12 +16,12 @@ namespace JUTPS.GameSettings
 
         private void Awake()
         {
-            JUGameSettings.OnApplySettings += ApplySettings;
+            JUGameSettings.OnChangeSettings += ApplySettings;
         }
 
         private void OnDestroy()
         {
-            JUGameSettings.OnApplySettings -= ApplySettings;
+            JUGameSettings.OnChangeSettings -= ApplySettings;
         }
 
         private void OnEnable()

@@ -33,12 +33,12 @@ namespace JUTPS.VehicleSystem
         public float StoppingPitch = 0.3f;
         public float StoppingSpeed = 1f;
 
-        private Vehicle vehicle;
+        private JUVehicle vehicle;
         private bool startedMotor;
         private bool motorOff;
         void Start()
         {
-            vehicle = GetComponent<Vehicle>();
+            vehicle = GetComponent<JUVehicle>();
             TurnOffMotor();
         }
 
@@ -49,26 +49,26 @@ namespace JUTPS.VehicleSystem
 
             if (vehicle.IsOn)
             {
-                bool accelerating = vehicle.FinalThrottle > 0;
-                bool reversing = vehicle.FinalThrottle < 0;
-                float engineMagnitude = new Vector2(vehicle.FinalSteer, vehicle.FinalThrottle).magnitude;
-                if(!startedMotor) TurnOnMotor();
+                bool accelerating = vehicle.FinalVertical > 0;
+                bool reversing = vehicle.FinalVertical < 0;
+                float engineMagnitude = new Vector2(vehicle.FinalHorizontal, vehicle.FinalVertical).magnitude;
+                if (!startedMotor) TurnOnMotor();
 
                 //Accelerate Pitch Sound
                 if (!MotorLoopAudioSource.isPlaying) return;
                 float pitchDiff = Mathf.Abs(AcceleratePitch - IdlePitch);
-                float pitch = accelerating ? (engineMagnitude * AcceleratePitch) : (reversing ? IdlePitch + pitchDiff/2 : IdlePitch);
+                float pitch = accelerating ? (engineMagnitude * AcceleratePitch) : (reversing ? IdlePitch + pitchDiff / 2 : IdlePitch);
                 float volume = accelerating ? (engineMagnitude * AccelerateVolume) : IdleVolume;
                 MotorLoopAudioSource.pitch = Mathf.Lerp(MotorLoopAudioSource.pitch, pitch, (accelerating ? AccelerateSpeed : DecelerateSpeed) * Time.deltaTime);
                 MotorLoopAudioSource.volume = Mathf.Lerp(MotorLoopAudioSource.volume, volume, (accelerating ? AccelerateSpeed : DecelerateSpeed) * Time.deltaTime);
             }
             else
             {
-                if(motorOff == false)
+                if (motorOff == false)
                 {
                     MotorLoopAudioSource.pitch = Mathf.MoveTowards(MotorLoopAudioSource.pitch, StoppingPitch, StoppingSpeed * Time.deltaTime);
                     MotorLoopAudioSource.volume = Mathf.MoveTowards(MotorLoopAudioSource.volume, 0, StoppingSpeed * Time.deltaTime);
-                    if(MotorLoopAudioSource.volume == 0)
+                    if (MotorLoopAudioSource.volume == 0)
                     {
                         TurnOffMotor();
                     }

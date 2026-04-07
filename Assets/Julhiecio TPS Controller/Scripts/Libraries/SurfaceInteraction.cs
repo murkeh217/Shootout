@@ -20,135 +20,156 @@ namespace JUTPS.FX
         }
     }
 
+    /// <summary>
+    /// Spawns audio and visual effects.
+    /// </summary>
     [System.Serializable]
     public class SurfaceAudiosWithFX
     {
+        /// <summary>
+        /// The tag of the surface, like ground, wall or anything.
+        /// </summary>
         public string SurfaceTag;
-        public List<AudioClip> AudioClips = new List<AudioClip>(4);
-        public List<GameObject> Effects = new List<GameObject>(4);
 
+        /// <summary>
+        /// The audios to play when interact with the surface.
+        /// </summary>
+        public List<AudioClip> AudioClips;
+
+        /// <summary>
+        /// The prefab effects to spawn when interact with the surface.
+        /// </summary>
+        public List<GameObject> Effects;
+
+        /// <summary>
+        /// The life time o the <see cref="Effects"/> when spawned.
+        /// </summary>
+        public float EffectsLifeTime;
+
+        /// <summary>
+        /// Create a new surfaceFX.
+        /// </summary>
+        public SurfaceAudiosWithFX()
+        {
+            EffectsLifeTime = 5f;
+            AudioClips = new List<AudioClip>(4);
+            Effects = new List<GameObject>(4);
+        }
+
+        /// <summary>
+        /// Create a new surfaceFX.
+        /// </summary>
+        /// <param name="tagName">The surface tag.</param>
         public SurfaceAudiosWithFX(string tagName = "Skin")
         {
             SurfaceTag = tagName;
+            EffectsLifeTime = 5f;
         }
 
-        public static void PlayRandomAudioFX(AudioSource audioSource, List<SurfaceAudiosWithFX> SurfaceAudioClips, string surfaceTag = "Untagged")
+        /// <summary>
+        /// Play a random <see cref="AudioClip"/> from a <see cref="SurfaceAudiosWithFX"/> based on a surface tag, 
+        /// if not have a tag, will play any <see cref="AudioClip"/>.
+        /// </summary>
+        /// <param name="audioSource">The <see cref="AudioSource"/> to play the audio.</param>
+        /// <param name="surfaceAudioClips">The surface clips to play. The system will select one clip based on the surface tag, if have.</param>
+        /// <param name="surfaceTag">The tag of the surface.</param>
+        public static void PlayRandomAudioFX(AudioSource audioSource, List<SurfaceAudiosWithFX> surfaceAudioClips, string surfaceTag = "Untagged")
         {
-            bool played = false;
+            if (surfaceAudioClips.Count < 1)
+                return;
 
-            for (int i = 0; i < SurfaceAudioClips.Count; i++)
+            SurfaceAudiosWithFX selectedSurface = surfaceAudioClips[0];
+            for (int i = 0; i < surfaceAudioClips.Count; i++)
             {
-                if (SurfaceAudioClips[i].SurfaceTag == surfaceTag)
+                if (surfaceAudioClips[i].SurfaceTag.Equals(surfaceTag))
                 {
-                    audioSource.PlayOneShot(SurfaceAudioClips[i].AudioClips[Random.Range(0, SurfaceAudioClips[i].AudioClips.Count)]);
-                    return;
+                    selectedSurface = surfaceAudioClips[i];
+                    break;
                 }
             }
 
-            if (played == false)
-            {
-                audioSource.PlayOneShot(SurfaceAudioClips[0].AudioClips[Random.Range(0, SurfaceAudioClips[0].AudioClips.Count)]);
-            }
+            int randomAudio = Random.Range(0, selectedSurface.AudioClips.Count);
+            audioSource.PlayOneShot(selectedSurface.AudioClips[randomAudio]);
         }
-        public static GameObject SpawnRandomFX(List<SurfaceAudiosWithFX> SurfaceAudioClips, Vector3 FXPosition, Quaternion FXRotation = default(Quaternion), string surfaceTag = "Untagged", float timeToDestroy = 5, bool HideInHierarchy = true)
+
+        /// <summary>
+        /// Instantiate a random FX based on a surface tag, if not have a surface will instantiate any effect.
+        /// </summary>
+        /// <param name="surfaceAudioClips">The surfaces.</param>
+        /// <param name="fxPosition">The position to spawn the effect.</param>
+        /// <param name="fxRotation">The rotation to spawn the effect.</param>
+        /// <param name="surfaceTag">The surface tag.</param>
+        /// <param name="hideInHierarchy">Hide the spawned object on the hierarchy editor?</param>
+        /// <returns></returns>
+        public static GameObject SpawnRandomFX(List<SurfaceAudiosWithFX> surfaceAudioClips, Vector3 fxPosition, Quaternion fxRotation = default, string surfaceTag = "Untagged", bool hideInHierarchy = true)
         {
-            bool spawned = false;
-
-            for (int i = 0; i < SurfaceAudioClips.Count; i++)
-            {
-                if (SurfaceAudioClips[i].SurfaceTag == surfaceTag)
-                {
-                    if (SurfaceAudioClips[i].Effects.Count > 0)
-                    {
-                        //Spawn
-                        GameObject obj = GameObject.Instantiate(SurfaceAudioClips[i].Effects[Random.Range(0, SurfaceAudioClips[i].Effects.Count)], FXPosition, FXRotation);
-
-                        //Hide
-                        if (HideInHierarchy) obj.hideFlags = HideFlags.HideInHierarchy;
-                        //Destroy
-                        GameObject.Destroy(obj, timeToDestroy);
-
-                        //Finish
-                        return obj;
-                    }
-                }
-            }
-
-            //If it couldn't find any SurfaceAudioClip with the same SurfaceTag, it will instantiate a random effect from the first SurfaceAudioClip 
-            if (spawned == false)
-            {
-                if (SurfaceAudioClips[0].Effects.Count > 0)
-                {
-                    //Spawn
-                    GameObject obj = GameObject.Instantiate(SurfaceAudioClips[0].Effects[Random.Range(0, SurfaceAudioClips[0].Effects.Count)], FXPosition, FXRotation);
-
-                    //Hide
-                    if (HideInHierarchy) obj.hideFlags = HideFlags.HideInHierarchy;
-
-                    //Destroy
-                    GameObject.Destroy(obj, timeToDestroy);
-
-                    //Finish
-                    return obj;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            else
-            {
+            if (surfaceAudioClips.Count < 1)
                 return null;
-            }
-        }
-        public static GameObject Play(AudioSource audioSource, SurfaceAudiosWithFX[] SurfaceAudioClips, Vector3 FXPosition, Quaternion FXRotation = default(Quaternion), Transform Parent = null, string surfaceTag = "Untagged", float timeToDestroy = 5, bool HideInHierarchy = true)
-        {
-            if (SurfaceAudioClips.Length == 0 || audioSource == null) return null;
-            bool played = false;
 
-            for (int i = 0; i < SurfaceAudioClips.Length; i++)
+            SurfaceAudiosWithFX selectedSurface = surfaceAudioClips[0];
+            for (int i = 0; i < surfaceAudioClips.Count; i++)
             {
-                if (SurfaceAudioClips[i].SurfaceTag == surfaceTag)
+                if (surfaceAudioClips[i].SurfaceTag.Equals(surfaceTag))
                 {
-                    audioSource.PlayOneShot(SurfaceAudioClips[i].AudioClips[Random.Range(0, SurfaceAudioClips[i].AudioClips.Count)]);
-                    if (SurfaceAudioClips[i].Effects.Count > 0)
-                    {
-                        GameObject obj = GameObject.Instantiate(SurfaceAudioClips[i].Effects[Random.Range(0, SurfaceAudioClips[i].Effects.Count)], FXPosition, FXRotation);
-                        obj.transform.SetParent(Parent);
-                        if (HideInHierarchy) { obj.hideFlags = HideFlags.HideInHierarchy; }
-                        GameObject.Destroy(obj, timeToDestroy);
-
-                        played = true;
-                        return obj;
-                    }
-                    else
-                    {
-                        return null;
-                    }
+                    selectedSurface = surfaceAudioClips[i];
+                    break;
                 }
             }
 
-            if (played == false)
-            {
-                audioSource.PlayOneShot(SurfaceAudioClips[0].AudioClips[Random.Range(0, SurfaceAudioClips[0].AudioClips.Count)]);
-
-                if (SurfaceAudioClips[0].Effects.Count > 0)
-                {
-                    GameObject obj = GameObject.Instantiate(SurfaceAudioClips[0].Effects[Random.Range(0, SurfaceAudioClips[0].Effects.Count)], FXPosition, FXRotation);
-                    obj.transform.SetParent(Parent);
-                    if (HideInHierarchy) { obj.hideFlags = HideFlags.HideInHierarchy; }
-                    GameObject.Destroy(obj, timeToDestroy);
-                    return obj;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            else
-            {
+            if (selectedSurface.Effects.Count < 1)
                 return null;
+
+            var randomFx = Random.Range(0, selectedSurface.Effects.Count);
+            GameObject obj = GameObject.Instantiate(selectedSurface.Effects[randomFx], fxPosition, fxRotation);
+
+            if (hideInHierarchy)
+                obj.hideFlags = HideFlags.HideInHierarchy;
+
+            GameObject.Destroy(obj, selectedSurface.EffectsLifeTime);
+            return obj;
+        }
+
+        /// <summary>
+        /// Play a surface audio and spawn an effect.
+        /// </summary>
+        /// <param name="audioSource">The <see cref="AudioSource" to play the surface audio./></param>
+        /// <param name="surfaceAudioClips">The surfaces.</param>
+        /// <param name="fxPosition"><The position to spawn the effect./param>
+        /// <param name="fxRotation">The rotation to spawn the effect.</param>
+        /// <param name="parent">The spawned effect parent.</param>
+        /// <param name="surfaceTag">The surface tag to spawn.</param>
+        /// <param name="hideInHierarchy">Hide the spawned object on the hierarchy editor?</param>
+        /// <returns></returns>
+        public static GameObject Play(AudioSource audioSource, SurfaceAudiosWithFX[] surfaceAudioClips, Vector3 fxPosition, Quaternion fxRotation = default, Transform parent = null, string surfaceTag = "Untagged", bool hideInHierarchy = true)
+        {
+            if (surfaceAudioClips.Length == 0)
+                return null;
+
+            SurfaceAudiosWithFX selectedSurface = surfaceAudioClips[0];
+            for (int i = 0; i < surfaceAudioClips.Length; i++)
+            {
+                if (surfaceAudioClips[i].SurfaceTag == surfaceTag)
+                {
+                    selectedSurface = surfaceAudioClips[i];
+                    break;
+                }
             }
+
+            if (audioSource)
+                audioSource.PlayOneShot(selectedSurface.AudioClips[Random.Range(0, selectedSurface.AudioClips.Count)]);
+
+            if (selectedSurface.Effects.Count < 1)
+                return null;
+
+            int randomFx = Random.Range(0, selectedSurface.Effects.Count);
+            GameObject obj = GameObject.Instantiate(selectedSurface.Effects[randomFx], fxPosition, fxRotation);
+            obj.transform.SetParent(parent, true);
+
+            if (hideInHierarchy)
+                obj.hideFlags = HideFlags.HideInHierarchy;
+
+            GameObject.Destroy(obj, surfaceAudioClips[randomFx].EffectsLifeTime);
+            return obj;
         }
     }
 

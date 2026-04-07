@@ -6,7 +6,7 @@ namespace JUTPS.Utilities
     public class TargetFrameRate : MonoBehaviour
     {
         public int TargetFPS = -1;
-        void Start()
+        void OnEnable()
         {
             Application.targetFrameRate = TargetFPS;
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
+using JUTPS.JUInputSystem;
 using JUTPS.CameraSystems;
 
 namespace JUTPS.CustomEditors
@@ -52,6 +53,8 @@ namespace JUTPS.CustomEditors
         {
             if (CameraSettings)
             {
+                serializedObject.FindProperty(nameof(target.InputAsset)).objectReferenceValue = EditorGUILayout.ObjectField("Input Asset", target.InputAsset, typeof(JUPlayerCharacterInputAsset), false);
+
                 serializedObject.FindProperty("TargetToFollow").objectReferenceValue =
                     EditorGUILayout.ObjectField("Target To Follow", target.TargetToFollow, typeof(Transform), true) as Transform;
 
@@ -71,6 +74,10 @@ namespace JUTPS.CustomEditors
 
                 serializedObject.FindProperty("GeneralSensibility").floatValue = EditorGUILayout.Slider("  General Sensibility", target.GeneralSensibility, 0, 5);
                 serializedObject.FindProperty("GeneralVerticalSensibility").floatValue = EditorGUILayout.Slider("  General Vertical Sensibility", target.GeneralVerticalSensibility, 0, 5);
+               
+                serializedObject.FindProperty(nameof(target.LockCursor)).boolValue = EditorGUILayout.Toggle("  Lock Cursor", target.LockCursor);
+                serializedObject.FindProperty(nameof(target.HideCursor)).boolValue = EditorGUILayout.Toggle("  Hide Cursor", target.HideCursor);
+
                 serializedObject.FindProperty(nameof(target.InvertHorizontal)).boolValue = EditorGUILayout.Toggle("  Invert Horizontal", target.InvertHorizontal);
                 serializedObject.FindProperty(nameof(target.InvertVertical)).boolValue = EditorGUILayout.Toggle("  Invert Vertical", target.InvertVertical);
             }

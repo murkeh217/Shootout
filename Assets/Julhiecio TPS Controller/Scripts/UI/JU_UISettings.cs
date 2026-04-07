@@ -3,6 +3,7 @@ using UnityEngine.Events;
 using UnityEngine.UI;
 using JUTPS.InputEvents;
 using JUTPS.GameSettings;
+using JU;
 
 namespace JUTPS.UI
 {
@@ -42,6 +43,11 @@ namespace JUTPS.UI
             /// </summary>
             public Toggle InvertHorizontal;
 
+            /// <summary>
+            /// The toggle to enable or disable camera aim assist.
+            /// </summary>
+            public Toggle AimAssist;
+
             public ControlsUI()
             {
                 MinRotationSensitive = 0.1f;
@@ -69,6 +75,12 @@ namespace JUTPS.UI
                     InvertHorizontal.isOn = JUGameSettings.CameraInvertHorizontal;
                     InvertHorizontal.onValueChanged.AddListener(OnToggleInvertCameraHorizontal);
                 }
+
+                if (AimAssist)
+                {
+                    AimAssist.isOn = JUGameSettings.UseAimAssist;
+                    AimAssist.onValueChanged.AddListener(OnToggleAimAssist);
+                }
             }
 
             private void OnChangeCameraSensitive(float sensitive)
@@ -84,6 +96,11 @@ namespace JUTPS.UI
             private void OnToggleInvertCameraHorizontal(bool invert)
             {
                 JUGameSettings.CameraInvertHorizontal = invert;
+            }
+
+            private void OnToggleAimAssist(bool enable)
+            {
+                JUGameSettings.UseAimAssist = enable;
             }
         }
 
@@ -154,6 +171,25 @@ namespace JUTPS.UI
         public class AudioUI
         {
             /// <summary>
+            /// Audio container.
+            /// </summary>
+            [System.Serializable]
+            public struct AudioTypeContainer
+            {
+                [SerializeField] internal string Name;
+
+                /// <summary>
+                /// The slider used to control the audio volume.
+                /// </summary>
+                public Slider VolumeSlider;
+
+                /// <summary>
+                /// The audio to control.
+                /// </summary>
+                public JUTag Tag;
+            }
+
+            /// <summary>
             /// The min audio volume, can be greater than <see cref="MaxVolume"/>.
             /// </summary>
             [Range(0, 1)] public float MinVolume;
@@ -166,7 +202,9 @@ namespace JUTPS.UI
             /// <summary>
             /// The UI slider to control the audio volume.
             /// </summary>
-            public Slider Volume;
+            public Slider GeneralVolume;
+
+            public AudioTypeContainer[] Volumes;
 
             public AudioUI()
             {
@@ -176,18 +214,38 @@ namespace JUTPS.UI
 
             internal void Setup()
             {
-                if (Volume)
+                if (GeneralVolume)
                 {
-                    Volume.minValue = MinVolume;
-                    Volume.maxValue = MaxVolume;
-                    Volume.value = JUGameSettings.AudioVolume;
-                    Volume.onValueChanged.AddListener(OnChangeVolume);
-                }
-            }
+                    GeneralVolume.minValue = MinVolume;
+                    GeneralVolume.maxValue = MaxVolume;
+                    GeneralVolume.value = JUGameSettings.AudioGeneralVolume;
 
-            private void OnChangeVolume(float volume)
-            {
-                JUGameSettings.AudioVolume = volume;
+                    GeneralVolume.onValueChanged.AddListener(value =>
+                    {
+                        JUGameSettings.AudioGeneralVolume = value;
+                    });
+                }
+
+                foreach (var volume in Volumes)
+                {
+                    var slider = volume.VolumeSlider;
+                    var tag = volume.Tag;
+
+                    if (!slider)
+                        continue;
+
+                    Debug.Assert(tag, $"{nameof(JU_UISettings)}: Audio Tag missing for audio volume slider: {volume.Name}." +
+                                        "The tag is used to set the correct volume for each audio type, like sfx, ui or music.");
+
+                    slider.value = JUGameSettings.GetAudioVolume(tag);
+                    slider.minValue = MinVolume;
+                    slider.maxValue = MaxVolume;
+
+                    slider.onValueChanged.AddListener(value =>
+                    {
+                        JUGameSettings.SetAudioVolume(tag, value);
+                    });
+                }
             }
         }
 

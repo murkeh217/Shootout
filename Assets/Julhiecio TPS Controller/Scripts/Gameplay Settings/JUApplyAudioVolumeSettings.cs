@@ -1,27 +1,42 @@
-using System.Collections;
-using System.Collections.Generic;
+using JU;
 using UnityEngine;
 
 namespace JUTPS.GameSettings
 {
     /// <summary>
-    /// Apply the <seealso cref="JUTPS.GameSettings.JUGameSettings.AudioVolume"/> to an AudioSource.
+    /// Apply the <seealso cref="JUTPS.GameSettings.JUGameSettings.AudioGeneralVolume"/> to an AudioSource.
     /// </summary>
+    [DisallowMultipleComponent]
     public class JUApplyAudioVolumeSettings : MonoBehaviour
     {
+        /// <summary>
+        /// The type of the audio, like Music, UI or Gameplay.
+        /// </summary>
+        public JUTag AudioTag;
+
         /// <summary>
         /// The audio source that will receive the volume settings.
         /// </summary>
         public AudioSource AudioSource;
 
+        private void Reset()
+        {
+#if UNITY_EDITOR
+            AudioSource = GetComponent<AudioSource>();
+            AudioTag = UnityEditor.AssetDatabase.LoadAssetAtPath<JUTag>("Assets/Julhiecio TPS Controller/Audio/SFX Audio Tag.asset");
+#endif
+        }
+
         private void Awake()
         {
-            JUGameSettings.OnApplySettings += ApplySettings;
+            Debug.Assert(AudioTag, $"The {nameof(JUApplyAudioVolumeSettings)} from gameObject {name} does not have an audio tag.");
+
+            JUGameSettings.OnChangeSettings += ApplySettings;
         }
 
         private void OnDestroy()
         {
-            JUGameSettings.OnApplySettings -= ApplySettings;
+            JUGameSettings.OnChangeSettings -= ApplySettings;
         }
 
         private void OnEnable()
@@ -30,14 +45,14 @@ namespace JUTPS.GameSettings
         }
 
         /// <summary>
-        /// Call to sync the audio volume with the <seealso cref="JUTPS.GameSettings.JUGameSettings.AudioVolume"/>.
+        /// Call to sync the audio volume with the <seealso cref="JUTPS.GameSettings.JUGameSettings.AudioGeneralVolume"/>.
         /// </summary>
         public void ApplySettings()
         {
-            if (!AudioSource)
+            if (!AudioSource || !AudioTag)
                 return;
 
-            AudioSource.volume = JUGameSettings.AudioVolume;
+            AudioSource.volume = JUGameSettings.GetAudioVolume(AudioTag);
         }
     }
 }

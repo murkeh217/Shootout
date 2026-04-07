@@ -27,12 +27,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3243631559774615308}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 1, y: 0, z: -5}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5431518917394168918}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &3243631559774615310
 Camera:
@@ -48,9 +49,17 @@ Camera:
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
+  m_Iso: 200
+  m_ShutterSpeed: 0.005
+  m_Aperture: 16
+  m_FocusDistance: 10
+  m_FocalLength: 50
+  m_BladeCount: 5
+  m_Curvature: {x: 2, y: 11}
+  m_BarrelClipping: 0.25
+  m_Anamorphism: 0
   m_SensorSize: {x: 36, y: 24}
   m_LensShift: {x: 0, y: 0}
-  m_FocalLength: 50
   m_NormalizedViewPortRect:
     serializedVersion: 2
     x: 0
@@ -177,6 +186,7 @@ GameObject:
   - component: {fileID: 3243631560226216736}
   - component: {fileID: 23890697}
   - component: {fileID: -1193399595824119269}
+  - component: {fileID: 7078884125322110943}
   m_Layer: 0
   m_Name: ThirdPerson Camera Controller
   m_TagString: Untagged
@@ -191,13 +201,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3243631560226216737}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 1.6100001, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5431518917394168918}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &3243631560226216736
 MonoBehaviour:
@@ -236,6 +247,7 @@ MonoBehaviour:
   CameraRecoilReaction: 1
   RecoilRotateCamera: 1
   CameraRecoilSensibility: 0.5
+  InputAsset: {fileID: 11400000, guid: aca8a726812237f4697ed31b7f3e8818, type: 2}
   characterTarget: {fileID: 0}
   FollowUpTarget: 0
   EnableAutoRotator: 0
@@ -351,19 +363,33 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3243631560226216737}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d6f45ba71c7b8bd439d293e5a72eab0e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DistanceToDetect: 100
-  AssistentForce: 15
-  TargetLayer:
+  _maxDistance: 100
+  _maxDistanceAimMode: 300
+  _mouseSettings:
+    Force: 0.1
+    AimingForceMultplier: 1
+  _gamepadSettings:
+    Force: 0.2
+    AimingForceMultplier: 1
+  _outOfViewTolerance: 1
+  _obstaclesLayer:
     serializedVersion: 2
-    m_Bits: 512
-  TargetsTagsAndOffsets:
-  - Tag: Enemy
-    UpOffset: 1
+    m_Bits: 65537
+  _targets:
+  - Layer:
+      serializedVersion: 2
+      m_Bits: 32768
+    Tags: []
+  - Layer:
+      serializedVersion: 2
+      m_Bits: 4352
+    Tags:
+    - Vehicle
 --- !u!114 &-1193399595824119269
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -377,6 +403,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   CameraController: {fileID: 3243631560226216736}
+--- !u!114 &7078884125322110943
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3243631560226216737}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9a0c6a21dba3d54f938dfbc1805392b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &8582740922879513078
 GameObject:
   m_ObjectHideFlags: 0
@@ -400,11 +438,12 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8582740922879513078}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3243631559774615305}
   m_Father: {fileID: 3243631560226216739}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

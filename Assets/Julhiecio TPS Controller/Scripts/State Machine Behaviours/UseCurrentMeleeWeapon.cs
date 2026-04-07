@@ -34,7 +34,7 @@ namespace JUTPS.AnimatorStateMachineBehaviours
         // OnStateUpdate is called on each Update frame between OnStateEnter and OnStateExit callbacks
         override public void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
-            if (Controller.MeleeWeaponInUseRightHand == null && Controller.MeleeWeaponInUseLeftHand == null) return;
+            if (Controller.RightHandMeleeWeapon == null && Controller.LeftHandMeleeWeapon == null) return;
 
             Controller.ResetDefaultLayersWeight(LegLayerException: Controller.FiringMode);
             Controller.LeftHandWeightIK = 0;
@@ -42,24 +42,24 @@ namespace JUTPS.AnimatorStateMachineBehaviours
 
             if (stateInfo.normalizedTime > StartUsing && stateInfo.normalizedTime < StopUsing && UsingMeleeWeapon == false)
             {
-                if (Controller.MeleeWeaponInUseRightHand) { Controller.MeleeWeaponInUseRightHand.UseItem(); }
-                if (Controller.MeleeWeaponInUseLeftHand) { Controller.MeleeWeaponInUseLeftHand.UseItem(); }
+                if (Controller.RightHandMeleeWeapon) { Controller.RightHandMeleeWeapon.UseItem(); }
+                if (Controller.LeftHandMeleeWeapon) { Controller.LeftHandMeleeWeapon.UseItem(); }
 
                 UsingMeleeWeapon = true;
             }
 
             if (stateInfo.normalizedTime > StopUsing && UsingMeleeWeapon == true)
             {
-                if (Controller.MeleeWeaponInUseRightHand) { Controller.MeleeWeaponInUseRightHand.StopUseItem(); }
-                if (Controller.MeleeWeaponInUseLeftHand) { Controller.MeleeWeaponInUseLeftHand.StopUseItem(); }
+                if (Controller.RightHandMeleeWeapon) { Controller.RightHandMeleeWeapon.StopUseItem(); }
+                if (Controller.LeftHandMeleeWeapon) { Controller.LeftHandMeleeWeapon.StopUseItem(); }
 
                 UsingMeleeWeapon = false;
             }
         }
         public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
-            if (Controller.MeleeWeaponInUseRightHand) { Controller.MeleeWeaponInUseRightHand.StopUseItem(); }
-            if (Controller.MeleeWeaponInUseLeftHand) { Controller.MeleeWeaponInUseLeftHand.StopUseItem(); }
+            if (Controller.RightHandMeleeWeapon) { Controller.RightHandMeleeWeapon.StopUseItem(); }
+            if (Controller.LeftHandMeleeWeapon) { Controller.LeftHandMeleeWeapon.StopUseItem(); }
         }
     }
 }

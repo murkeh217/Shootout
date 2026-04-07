@@ -340,9 +340,10 @@ GameObject:
   m_Component:
   - component: {fileID: 5703240451661767448}
   - component: {fileID: 6562636499778866920}
+  - component: {fileID: 7535268049161561106}
   m_Layer: 2
   m_Name: VehicleArea
-  m_TagString: VehicleArea
+  m_TagString: Interactable
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -374,6 +375,22 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &7535268049161561106
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3446983777999703254}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d249b4cc7322e94183e92bc94d426c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  InteractionEnabled: 1
+  EnterExitVehicle:
+    MaxVehicleSpeedToEnter: 5
+    MaxCharacterSpeedToEnter: 5
 --- !u!1 &3622436741485189393
 GameObject:
   m_ObjectHideFlags: 0
@@ -1148,7 +1165,7 @@ GameObject:
   - component: {fileID: 6257476985730939068}
   m_Layer: 8
   m_Name: Motorcycle
-  m_TagString: Untagged
+  m_TagString: Vehicle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1237,11 +1254,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f525cccc7e16c92459a0618cb94ed903, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  UseDefaultInputs: 1
+  IsOn: 0
+  ControlsEnabled: 1
+  UsePlayerInputs: 1
+  PlayerInputs: {fileID: 11400000, guid: be455aa438e8dc04899a8578b3ce7ef1, type: 2}
   Engine:
-    MaxForwardSpeed: 45
+    MaxForwardSpeed: 300
     MaxRearSpeed: 1
-    TorqueForce: 350
+    TorqueForce: 550
     BrakeForce: 1200
     AutoBrakeForce: 100
     AccelerationCurve:
@@ -1256,15 +1276,6 @@ MonoBehaviour:
         weightedMode: 0
         inWeight: 0
         outWeight: 0
-      - serializedVersion: 3
-        time: 0.08731403
-        value: 0.876806
-        inSlope: -2.6410513
-        outSlope: -2.6410513
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0.24394745
-        outWeight: 0.05138477
       - serializedVersion: 3
         time: 1
         value: 0
@@ -1281,8 +1292,8 @@ MonoBehaviour:
   DrivePadSmooth:
     RiseRateThrottle: 2
     FallRateThrotte: 2
-    RiseRateSteer: 4
-    FallRateSteer: 4
+    RiseRateSteer: 2
+    FallRateSteer: 3
     RiseRateBrake: 2
     RiseFallBrake: 2
   SteerVsSpeed:
@@ -1298,7 +1309,7 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
-      time: 45
+      time: 12
       value: 0.3
       inSlope: 0
       outSlope: 0
@@ -1310,8 +1321,6 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   RotateToUpInAirSpeed: 1
-  IsOn: 0
-  ControlsEnabled: 1
   FrontWheel:
     MaxSteerAngle: 35
     ThrottleIntensity: 0
@@ -1332,10 +1341,10 @@ MonoBehaviour:
       m_Bits: 67585
     EnableAntiOverturn: 1
     AntiOverturnSpeed: 1
-    IsOverturned: 0
+    IsOverturned: 1
   Inclination:
     Sensitive: 3
-    Speed: 1
+    Speed: 2.5
     MaxAngle: 45
     StopedInclination: -10
     OnGroundDrag: 5
@@ -1587,7 +1596,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57b76bb4d21f5654aae48bafd91b9a5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CharactersCanGetVehicle: 1
   CharacterExitingPosition: {x: -1, y: 0, z: 0}
   InverseKinematicTargetPositions:
     CharacterPosition: {fileID: 1879953439}

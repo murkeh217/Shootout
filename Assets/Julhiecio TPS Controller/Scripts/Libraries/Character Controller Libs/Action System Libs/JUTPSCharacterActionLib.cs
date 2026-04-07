@@ -1,33 +1,72 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using JUTPS;
 using UnityEngine;
-
-using JUTPS;
 
 namespace JUTPSActions
 {
     public class JUTPSAction : MonoBehaviour
     {
-        protected JUCharacterController TPSCharacter;
-        protected Animator anim;
-        protected Rigidbody rb;
-        protected Collider coll;
-        protected Camera cam;
-        public virtual void Awake()
+        private JUCharacterController _character;
+
+        public JUCharacterController TPSCharacter
         {
-            TPSCharacter = GetComponent<JUCharacterController>();
-            rb = GetComponent<Rigidbody>();
-            anim = GetComponent<Animator>();
-            coll = GetComponent<Collider>();
-            GetCamera();
-            Invoke(nameof(GetCamera), 0.001f);
-        }
-        private void GetCamera()
-        {
-            if (TPSCharacter != null)
+            get
             {
-                cam = (TPSCharacter.MyPivotCamera != null) ? TPSCharacter.MyPivotCamera.mCamera : null;
+                if (!_character)
+                    _character = GetComponent<JUCharacterController>();
+
+                return _character;
             }
+        }
+
+        public Animator anim
+        {
+            get
+            {
+                if (!TPSCharacter)
+                    return null;
+
+                return TPSCharacter.anim;
+            }
+        }
+
+        public Rigidbody rb
+        {
+            get
+            {
+                if (!TPSCharacter)
+                    return null;
+
+                return TPSCharacter.rb;
+            }
+        }
+
+        public Collider coll
+        {
+            get
+            {
+                if (!TPSCharacter)
+                    return null;
+
+                return TPSCharacter.coll;
+            }
+        }
+
+        public Camera cam
+        {
+            get
+            {
+                if (!TPSCharacter)
+                    return null;
+
+                if (TPSCharacter.MyPivotCamera)
+                    return TPSCharacter.MyPivotCamera.mCamera;
+
+                return null;
+            }
+        }
+
+        protected virtual void Awake()
+        {
         }
     }
     public class JUTPSAnimatedAction : JUTPSAction
@@ -41,7 +80,7 @@ namespace JUTPSActions
         public float EnterTransitionSpeed;
         public float ExitTransitionSpeed;
 
-        [SerializeField]protected StateOfAction ActionState;
+        [SerializeField] protected StateOfAction ActionState;
 
         protected bool NoneAction = true, ActionStarted, IsActionPlaying, ActionEnded;
 
@@ -70,12 +109,13 @@ namespace JUTPSActions
             if (ActionCurrentTime < ActionDuration) ActionCurrentTime += Time.deltaTime;
 
             //LAYER WEIGHT 
-            switch (ActionState) {
+            switch (ActionState)
+            {
                 case StateOfAction.Started:
                     LayerWeight = Mathf.MoveTowards(LayerWeight, 0, ExitTransitionSpeed * Time.deltaTime);
                     break;
                 case StateOfAction.Playing:
-                LayerWeight = Mathf.MoveTowards(LayerWeight, 1, EnterTransitionSpeed * Time.deltaTime);
+                    LayerWeight = Mathf.MoveTowards(LayerWeight, 1, EnterTransitionSpeed * Time.deltaTime);
                     break;
                 case StateOfAction.Ended:
                     LayerWeight = Mathf.MoveTowards(LayerWeight, 0, ExitTransitionSpeed * Time.deltaTime);
@@ -181,7 +221,7 @@ namespace JUTPSActions
         {
             return ActionCurrentLayerIndex;
         }
-        
+
         protected void DisableCharacterMovement(float duration = 0)
         {
             if (TPSCharacter == null) return;

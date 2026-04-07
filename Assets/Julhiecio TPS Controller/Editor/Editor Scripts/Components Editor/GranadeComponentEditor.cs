@@ -53,6 +53,7 @@ namespace JUTPS.CustomEditors
         {
             if (ThrowSettings)
             {
+                serializedObject.FindProperty(nameof(w.ActiveOnThrow)).objectReferenceValue = EditorGUILayout.ObjectField("Active On Throw", w.ActiveOnThrow, w.ActiveOnThrow.GetType(), true);
                 serializedObject.FindProperty("AnimationTriggerParameterName").stringValue = EditorGUILayout.TextField("Animation Trigger Parameter Name", w.AnimationTriggerParameterName);
                 serializedObject.FindProperty("ThrowForce").floatValue = EditorGUILayout.FloatField("Throw Force", w.ThrowForce);
                 serializedObject.FindProperty("ThrowUpForce").floatValue = EditorGUILayout.FloatField("Throw UpForce", w.ThrowUpForce);

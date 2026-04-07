@@ -22,7 +22,8 @@ namespace JUTPS.ActionScripts
         public bool FireModeWhenHasJoystickDirection = true;
         [Header("Aim Mode Settings")]
         public bool SidescrollerAimMode;
-
+        public float AngleAdjust = 0.1f;
+        public float AngleAdjustThreshold = 1; 
         float Xinput, Yinput;
 
 
@@ -30,6 +31,12 @@ namespace JUTPS.ActionScripts
         void Start()
         {
             cameraController = FindObjectOfType<JUCameraController>();
+
+            if (SidescrollerAimMode) // Look to forward (right vector) of 2D view.
+            {
+                Xinput = 10;
+                Yinput = 0;
+            }
         }
 
         // Update is called once per frame
@@ -39,14 +46,19 @@ namespace JUTPS.ActionScripts
             {
                 return;
             }
-            float realXinput = Mathf.Clamp(Mathf.Abs(JUInput.GetAxis(JUInput.Axis.RotateHorizontal)), -1, 1);
-            float realYinput = Mathf.Clamp(Mathf.Abs(JUInput.GetAxis(JUInput.Axis.RotateVertical)), -1, 1);
+
+            Vector2 lookAxis = Vector2.zero;
+            if (TPSCharacter.Inputs)
+                lookAxis = TPSCharacter.Inputs.LookAxis;
+
+            float realXinput = Mathf.Clamp(Mathf.Abs(lookAxis.x), -1, 1);
+            float realYinput = Mathf.Clamp(Mathf.Abs(lookAxis.y), -1, 1);
 
             if (realYinput > 0.1f || realXinput > 0.1f)
             {
                 IsUsingJoystick = true;
-                Yinput = JUInput.GetAxis(JUInput.Axis.RotateVertical);
-                Xinput = JUInput.GetAxis(JUInput.Axis.RotateHorizontal);
+                Yinput = lookAxis.y;
+                Xinput = lookAxis.x;
                 if (FireModeWhenHasJoystickDirection)
                 {
                     if (TPSCharacter.HoldableItemInUseRightHand == null)
@@ -75,11 +87,21 @@ namespace JUTPS.ActionScripts
                 }
             }
 
+            if (!TPSCharacter.EnablePunchAttacks && !TPSCharacter.HoldableItemInUseRightHand)
+            {
+                TPSCharacter.FiringMode = false;
+                TPSCharacter.FiringModeIK = false;
+            }
+
             if (SidescrollerAimMode)
             {
                 Vector3 Direction = new Vector3(Xinput, Yinput);
 
                 //Modify position
+                float clampedYInput = Mathf.Clamp(Yinput, -AngleAdjustThreshold, AngleAdjustThreshold);
+
+                Direction.z = Mathf.Lerp(TPSCharacter.transform.position.z + 0.1f, -Mathf.Abs(clampedYInput), new Vector3(Xinput, Yinput).magnitude * AngleAdjust);
+                //Direction.z = Mathf.Clamp(Direction.z, -AngleAdjustThreshold, AngleAdjustThreshold);
                 //Direction.z = Mathf.Lerp(TPSCharacter.transform.position.z - 3f, Yinput, new Vector3(Xinput, Yinput).magnitude + 0.5f);
 
                 AimPosition = TPSCharacter.PivotItemRotation.transform.position + Direction.normalized * DistanceFromCenter;

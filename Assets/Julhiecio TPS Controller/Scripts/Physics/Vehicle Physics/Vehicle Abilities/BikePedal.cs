@@ -8,7 +8,7 @@ namespace JUTPS.VehicleSystem
     public class BikePedal : MonoBehaviour
     {
         [Header("Pedal Rotation")]
-        public Vehicle Bike;
+        public MotorcycleController Bike;
         public WheelCollider BackWheel;
         public float PedalRotateSpeed = 0.2f;
         public Transform RightPedal, LeftPedal;
@@ -19,7 +19,7 @@ namespace JUTPS.VehicleSystem
 
         void Start()
         {
-            Bike = GetComponentInParent<Vehicle>();
+            Bike = GetComponentInParent<MotorcycleController>();
             if (FootUpOrientator == null && Bike != null) FootUpOrientator = Bike.transform;
         }
         void Update()

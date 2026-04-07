@@ -8,7 +8,7 @@ namespace JUTPS.VehicleSystem
     /// Ju car controller.
     /// </summary>
     [AddComponentMenu("JU TPS/Vehicle System/Car Controller")]
-    public class CarController : Vehicle
+    public class CarController : JUWheeledVehicle
     {
         /// <summary>
         /// Stores a <see cref="WheelCollider"/> from each side of the vehicle axle and properties of wheels behavior.
@@ -60,7 +60,6 @@ namespace JUTPS.VehicleSystem
         /// <summary>
         /// Align vehicle on ground normal when grounded.
         /// </summary>
-        [Header("Anti Overturn")]
         public VehicleOverturnCheck OverturnCheck;
 
         /// <summary>
@@ -132,9 +131,6 @@ namespace JUTPS.VehicleSystem
             if (!IsOn)
                 return;
 
-            if (UseDefaultInputs)
-                UpdatePlayerControls();
-
             OverturnCheck.OverturnCheck(transform);
             OverturnCheck.AntiOverturn(transform);
         }
@@ -147,13 +143,6 @@ namespace JUTPS.VehicleSystem
 
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(Engine.CenterOfMass, 0.2f);
-        }
-
-        private void UpdatePlayerControls()
-        {
-            Steer = JUInput.GetAxis(JUInput.Axis.MoveHorizontal);
-            Throttle = JUInput.GetAxis(JUInput.Axis.MoveVertical);
-            Brake = JUInput.GetButton(JUInput.Buttons.JumpButton) ? 1 : 0;
         }
 
         /// <inheritdoc/>

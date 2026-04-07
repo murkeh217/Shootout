@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace JUTPS.VehicleSystem
 {
@@ -8,41 +9,68 @@ namespace JUTPS.VehicleSystem
     public class VehicleJump : MonoBehaviour
     {
         /// <summary>
+        /// Use <see cref="JumpAction"/> to do vehicle jump?
+        /// </summary>
+        public bool UseDefaultInput;
+
+        /// <summary>
+        /// The action that contains the keys/buttons to player jump.
+        /// </summary>
+        public InputAction JumpAction;
+
+        /// <summary>
         /// The jump force.
         /// </summary>
         public float JumpForce;
 
         /// <summary>
-        /// Use <see cref="JUInputSystem.JUInput"/> control to do vehicle jump?
-        /// </summary>
-        public bool UseDefaultInput;
-
-        /// <summary>
         /// The vehicle that be controled by this <see cref="VehicleJump"/> component.
         /// </summary>
-        public Vehicle Vehicle { get; private set; }
+        public JUWheeledVehicle Vehicle { get; private set; }
+
+        /// <summary>
+        /// Return true when press <see cref="JumpAction"/> by the first time.
+        /// </summary>
+        public bool IsJumpTriggered
+        {
+            get => JumpAction.triggered;
+        }
 
         /// <summary>
         /// Create a <see cref="VehicleJump"/> component instance.
         /// </summary>
         public VehicleJump()
         {
-            JumpForce = 100;
+            JumpForce = 7000;
             UseDefaultInput = true;
+
+            JumpAction = new InputAction();
+            JumpAction.AddBinding("<Keyboard>/space");
+            JumpAction.AddBinding("<Gamepad>/buttonSouth");
+        }
+
+        private void OnEnable()
+        {
+            JumpAction.Enable();
+        }
+
+        private void OnDisable()
+        {
+            JumpAction.Disable();
         }
 
         private void Start()
         {
-            Vehicle = GetComponent<Vehicle>();
+            Vehicle = GetComponent<JUWheeledVehicle>();
         }
 
         // Update is called once per frame
         private void Update()
         {
-            if (!UseDefaultInput)
+            if (!UseDefaultInput || !Vehicle || !Vehicle.IsOn)
                 return;
 
-            if (JUInputSystem.JUInput.GetButtonDown(JUInputSystem.JUInput.Buttons.JumpButton))
+            if (IsJumpTriggered)
                 Jump(JumpForce);
         }
 
@@ -52,7 +80,7 @@ namespace JUTPS.VehicleSystem
         /// <param name="force">The jump force</param>
         public void Jump(float force)
         {
-            if (!Vehicle ||!Vehicle.IsOn || !Vehicle.IsGrounded)
+            if (!Vehicle || !Vehicle.IsGrounded)
                 return;
 
             Vehicle.RigidBody.AddRelativeForce(0, force, 0, ForceMode.Impulse);

@@ -12,7 +12,7 @@ namespace JUTPS.AI
     [AddComponentMenu("JU TPS/AI/Vehicle AI")]
     public class VehicleAI : MonoBehaviour
     {
-        private Vehicle vehicle;
+        private JUWheeledVehicle vehicle;
 
         //Used to update following state
         private Vector3 oldPosition;
@@ -30,7 +30,7 @@ namespace JUTPS.AI
         [Header("Vehicle Path Locomotion Settings")]
         public float DistanceToContinuePath = 2;
         public float VehicleDesacelerationIntensity = 1;
-        public Vehicle.VehicleRaycastCheck FrontCheck;
+        public JUVehicle.VehicleRaycastCheck FrontCheck;
         public bool CheckNearestPointOnPath;
         public WaypointPath.OnEndPathAction OnEndPath = WaypointPath.OnEndPathAction.Stop;
 
@@ -42,7 +42,7 @@ namespace JUTPS.AI
         void Start()
         {
             //Get vehicle component
-            vehicle = GetComponent<Vehicle>();
+            vehicle = GetComponent<JUWheeledVehicle>();
 
             if (EnablePathfinding || WaypointPath == null)
             {
@@ -106,7 +106,7 @@ namespace JUTPS.AI
         }
 
 
-        public static void FollowPath(ref Vector3[] path, Vehicle vehicle, float stoppingDistance, float desacelerationOnCurvesIntensity, ref int currentPathCornerId, WaypointPath.OnEndPathAction onPathEnd = WaypointPath.OnEndPathAction.Stop, bool TheresWallInVehicleFront = false, bool CheckClosestPoint = false)
+        public static void FollowPath(ref Vector3[] path, JUWheeledVehicle vehicle, float stoppingDistance, float desacelerationOnCurvesIntensity, ref int currentPathCornerId, WaypointPath.OnEndPathAction onPathEnd = WaypointPath.OnEndPathAction.Stop, bool TheresWallInVehicleFront = false, bool CheckClosestPoint = false)
         {
             if (!vehicle.IsOn || !vehicle.IsGrounded || path.Length == 0) return;
 
@@ -157,7 +157,7 @@ namespace JUTPS.AI
             }
 
             //Brake vehicle if going on wrong direction
-            if (RightDirectionIntensity > 0.3f && vehicle.FinalThrottle < -1f)
+            if (RightDirectionIntensity > 0.3f && vehicle.FinalVertical < -1f)
             {
                 BrakeInput = true;
             }
@@ -205,11 +205,11 @@ namespace JUTPS.AI
                 }
             }
 
-            vehicle.Throttle = VerticalInput;
-            vehicle.Steer = HorizontalInput;
+            vehicle.Vertical = VerticalInput;
+            vehicle.Horizontal = HorizontalInput;
             vehicle.Brake = BrakeInput ? 1 : 0;
         }
-        public static float GetVehicleRightDirectionIntensity(Vehicle vehicle, Vector3 currentTargetPathPosition)
+        public static float GetVehicleRightDirectionIntensity(VehicleAI vehicle, Vector3 currentTargetPathPosition)
         {
             Vector3 TargetDirection = (currentTargetPathPosition - vehicle.transform.position).normalized;
             float RightDirectionIntensity = Vector3.Dot(vehicle.transform.forward, TargetDirection);
@@ -222,7 +222,7 @@ namespace JUTPS.AI
 
         private void OnDrawGizmos()
         {
-            Vehicle.VehicleGizmo.DrawRaycastHit(FrontCheck, transform, transform.forward);
+            JUVehicle.VehicleGizmo.DrawRaycastHit(FrontCheck, transform, transform.forward);
             if (Application.isPlaying == false)
             {
                 if (EnablePathfinding) Gizmos.DrawWireSphere(Destination, 1);

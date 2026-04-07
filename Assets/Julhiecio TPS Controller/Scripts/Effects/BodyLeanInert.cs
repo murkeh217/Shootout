@@ -1,9 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using JUTPSActions;
 using UnityEditor;
-using JUTPSActions;
-using JUTPS;
+using UnityEngine;
 
 namespace JUTPS.FX
 {
@@ -16,10 +13,10 @@ namespace JUTPS.FX
         public bool RootBoneSpineLean = true;
         public bool RootBoneSpineMovement = true;
 
-        public float RootBoneLeanIntensity = 30;
+        public float RootBoneLeanIntensity = 20;
         public float RootBoneLeanSpeed = 8;
-        public float RootBoneDownMovementIntensity = 0.5f;
-        public float BlockForwardLeanWeight = 8;
+        public float RootBoneDownMovementIntensity = 0.25f;
+        public float BlockForwardLeanWeight = 4;
 
         float Speed;
         float Lean;
@@ -33,12 +30,12 @@ namespace JUTPS.FX
         public enum Axis { X, Y, Z }
 
 
-        public override void Awake()
+        protected override void Awake()
         {
             base.Awake();
             if (JUFootPlacer == null) JUFootPlacer = GetComponent<JUFootPlacement>();
             if (RootBone == null) RootBone = anim.GetBoneTransform(HumanBodyBones.Hips);
-            anim.updateMode = AnimatorUpdateMode.Fixed;
+            anim.updateMode = AnimatorUpdateMode.AnimatePhysics;
         }
         void OnAnimatorIK()
         {
@@ -53,6 +50,7 @@ namespace JUTPS.FX
             Speed = 0;
             Lean = 0;
         }
+        public void SetCurrentSpeed(float speed) { Speed = speed; }
         void DoInert()
         {
             Vector3 euler = NotAffectedEulerAngles;

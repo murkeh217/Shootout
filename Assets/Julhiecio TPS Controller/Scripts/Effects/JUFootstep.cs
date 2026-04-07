@@ -1,153 +1,329 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
+using UnityEngine.Events;
+
 namespace JUTPS.FX
 {
+    /// <summary>
+    /// Spawn footstep sound or effects while character walks.
+    /// </summary>
+    [RequireComponent(typeof(Animator))]
     [AddComponentMenu("JU TPS/FX/Footstep")]
     public class JUFootstep : MonoBehaviour
     {
-        private Animator anim;
-        [Header("FX Settings")]
-        public AudioSource audioSource;
-        public SurfaceAudiosWithFX[] FootstepAudioClips ;
-        public bool InvertX;
-        [Range(0, 1)]
-        public float MinTimeToPlayAudio = 0.3f;
+        private const float CHECK_FOOTSTEP_DISTANCE_INTERVAL = 2f;
 
+        // Use static variable to store camera to share the same data for all footsteps 
+        // of all characters avoiding unnecessary calls to find the camera.
+        private static Camera _mainCamera;
+
+        private float _checkFootstepActiveTimer;
+
+        private bool _leftFootGrounded;
+        private bool _rightFootGrounded;
+
+        private float _checkLeftFootTimer;
+        private float _checkRightFootTimer;
+
+        /// <summary>
+        /// The audio source that will play the footstep sound.
+        /// </summary>
+        [Header("FX Settings")]
+        public AudioSource AudioSource;
+
+        /// <summary>
+        /// All footsteps FXs.
+        /// </summary>
+        public SurfaceAudiosWithFX[] FootstepAudioClips;
+
+        /// <summary>
+        /// Invert the footstep decal X scale?
+        /// </summary>
+        public bool InvertX;
+
+        /// <summary>
+        /// Used to doesn't allow play multiple footstep audios on the same time.
+        /// </summary>
+        [Range(0, 1)]
+        public float MinTimeToPlayAudio;
+
+        /// <summary>
+        /// The ground collider layer.
+        /// </summary>
         [Header("Ground Check")]
         public LayerMask GroundLayers;
+
+        /// <summary>
+        /// The max distance to check if the foot is grounded.
+        /// </summary>
         [Range(0, 1)]
-        public float CheckRadius = 0.1f;
+        public float CheckDistance;
+
+        /// <summary>
+        /// The ground check position 'Y' relative to foot position.
+        /// </summary>
         [Header("Ground Check Position Offset")]
         [Range(-0.2f, 0.2f)]
-        public float UpOffset = -0.07f;
-        [Range(-0.2f, 0.2f)]
-        public float ForwardOffset = 0.07f;
+        public float UpOffset;
 
+        /// <summary>
+        /// The ground check position 'Z' relative to foot position.
+        /// </summary>
+        [Range(-0.2f, 0.2f)]
+        public float ForwardOffset;
+
+        /// <summary>
+        /// The left foot transform.
+        /// </summary>
         [Space]
         public Transform LeftFoot;
+
+        /// <summary>
+        /// The right foot transform.
+        /// </summary>
         public Transform RightFoot;
 
+        /// <summary>
+        /// The max distance that the footstep can play based on <see cref="Camera.main"/> position.
+        /// </summary>
+        public float MaxFootstepDistance;
 
-        private bool LeftFootsteped;
-        private bool RightFootsteped;
+        /// <summary>
+        /// Called on left foot hit ground.
+        /// </summary>
+        public UnityEvent<RaycastHit> OnLeftFootHit;
 
-        private float CurrentTimeToLeftFootstep;
-        private float CurrentTimeToRightFootstep;
-        void Start()
+        /// <summary>
+        /// Called on right foot hit ground.
+        /// </summary>
+        public UnityEvent<RaycastHit> OnRightFootHit;
+
+        /// <summary>
+        /// Return true if the character is closest of the <see cref="Camera.main"/> based on <see cref="MaxFootstepDistance"/>.
+        /// If false, the footstep will not play (used to optimize distant characters).
+        /// </summary>
+        public bool IsFootsepActing { get; private set; }
+
+        /// <summary>
+        /// The animator used by the footstep system.
+        /// </summary>
+        public Animator Animator { get; private set; }
+
+        /// <summary>
+        /// The footstep checker position of the left foot.
+        /// </summary>
+        public Vector3 LeftFootCheckerPosition
         {
-            audioSource = audioSource == null ? GetComponent<AudioSource>() : audioSource;
-            var animator = GetComponent<Animator>();
-            if (animator != null)
+            get => LeftFoot ? GetFootCheckerPosition(LeftFoot) : Vector3.zero;
+        }
+
+        /// <summary>
+        /// The footstep checker position of the right foot.
+        /// </summary>
+        public Vector3 RightFootCheckerPosition
+        {
+            get => RightFoot ? GetFootCheckerPosition(RightFoot) : Vector3.zero;
+        }
+
+        /// <summary>
+        /// Create a component instance.
+        /// </summary>
+        public JUFootstep()
+        {
+            MinTimeToPlayAudio = 0.3f;
+            CheckDistance = 0.2f;
+
+            ForwardOffset = 0.07f;
+            UpOffset = -0.07f;
+
+            MaxFootstepDistance = 20;
+        }
+
+        private void Start()
+        {
+            if (!AudioSource)
+                AudioSource = GetComponent<AudioSource>();
+
+            Animator = GetComponent<Animator>();
+            if (Animator)
             {
-                anim = animator;
-                if (LeftFoot == null || RightFoot == null)
-                {
-                    LeftFoot = anim.GetBoneTransform(HumanBodyBones.LeftFoot);
-                    RightFoot = anim.GetBoneTransform(HumanBodyBones.RightFoot);
-                }
+                if (!LeftFoot) LeftFoot = Animator.GetBoneTransform(HumanBodyBones.LeftFoot);
+                if (!RightFoot) RightFoot = Animator.GetBoneTransform(HumanBodyBones.RightFoot);
             }
+
             if (GroundLayers.value == 0)
-            {
                 GroundLayers = LayerMask.GetMask("Default");
+        }
+
+        private void Update()
+        {
+            if (!LeftFoot || !RightFoot)
+                return;
+
+            UpdateFootstepActiveByDistance();
+
+            if (!IsFootsepActing)
+                return;
+
+            if (_checkLeftFootTimer < MinTimeToPlayAudio)
+                _checkLeftFootTimer += Time.deltaTime;
+
+            else
+            {
+                bool hasLeftGroundHit = GetFootHitInfo(LeftFoot, out RaycastHit leftFootHit);
+
+                if (hasLeftGroundHit && !_leftFootGrounded)
+                {
+                    DoFootstep(LeftFoot, leftFootHit);
+                    _checkLeftFootTimer = 0;
+                    _leftFootGrounded = true;
+
+                    OnLeftFootHit.Invoke(leftFootHit);
+                }
+
+                if (!hasLeftGroundHit)
+                    _leftFootGrounded = false;
+            }
+
+            if (_checkRightFootTimer < MinTimeToPlayAudio)
+                _checkRightFootTimer += Time.deltaTime;
+
+            else
+            {
+                bool hasRightGroundHit = GetFootHitInfo(RightFoot, out RaycastHit rightFootHit);
+
+                if (hasRightGroundHit && !_rightFootGrounded)
+                {
+                    DoFootstep(RightFoot, rightFootHit);
+                    _checkRightFootTimer = 0;
+                    _rightFootGrounded = true;
+
+                    OnRightFootHit.Invoke(rightFootHit);
+                }
+
+                if (!hasRightGroundHit)
+                    _rightFootGrounded = false;
             }
         }
 
-
-        // Update is called once per frame
-        protected virtual void Update()
+        private bool GetFootHitInfo(Transform foot, out RaycastHit hit)
         {
-            if(LeftFoot == null || RightFoot == null)
-            {
-                LeftFoot = anim.GetBoneTransform(HumanBodyBones.LeftFoot);
-                RightFoot = anim.GetBoneTransform(HumanBodyBones.RightFoot);
-            }
-            Vector3 LeftFootPosition = LeftFoot.position + transform.forward * ForwardOffset + transform.up * UpOffset;
-            Vector3 RightFootPosition = RightFoot.position + transform.forward * ForwardOffset + transform.up * UpOffset;
-
-            Collider[] LeftFootCheck = Physics.OverlapSphere(LeftFootPosition, CheckRadius, GroundLayers);
-            Collider[] RightFootCheck = Physics.OverlapSphere(RightFootPosition, CheckRadius, GroundLayers);
-
-            if (CurrentTimeToLeftFootstep < MinTimeToPlayAudio) { CurrentTimeToLeftFootstep += Time.deltaTime; }
-            if (CurrentTimeToRightFootstep < MinTimeToPlayAudio) { CurrentTimeToRightFootstep += Time.deltaTime; }
-
-            //Left Footstep
-            if (LeftFootCheck.Length == 0)
-            {
-                LeftFootsteped = false;
-            }
-            else
-            {
-                if (LeftFootCheck.Length > 0 && LeftFootsteped == false && CurrentTimeToLeftFootstep > MinTimeToPlayAudio)
-                {
-                    DoFootstep(LeftFoot, LeftFootCheck[0].tag);
-                    CurrentTimeToLeftFootstep = 0;
-                    LeftFootsteped = true;
-                }
-            }
-
-
-            //Right Footstep
-            if (RightFootCheck.Length == 0)
-            {
-                RightFootsteped = false;
-            }
-            else
-            {
-                if (RightFootCheck.Length > 0 && RightFootsteped == false && CurrentTimeToRightFootstep > MinTimeToPlayAudio)
-                {
-                    DoFootstep(RightFoot, RightFootCheck[0].tag);
-                    CurrentTimeToRightFootstep = 0;
-                    RightFootsteped = true;
-                }
-            }
+            Vector3 footPosition = GetFootCheckerPosition(foot);
+            return Physics.Raycast(footPosition, -transform.up, out hit, CheckDistance, GroundLayers);
         }
-        public virtual void DoFootstep(Transform Foot, string SurfaceTag = "Untagged")
-        {
-            // Ground Raycast to get ground angle
-            RaycastHit hit;
-            Physics.Raycast(Foot.position, -transform.up, out hit, 1, GroundLayers);
 
+        private Vector3 GetFootCheckerPosition(Transform foot)
+        {
+            return foot.position + transform.forward * ForwardOffset + transform.up * UpOffset;
+        }
+
+        private void DoFootstep(Transform foot, RaycastHit groundHit)
+        {
             // Play random footstep audio, instantiate decal and return the decal gameobject
-            GameObject FootstepDecal = SurfaceAudiosWithFX.Play(audioSource, FootstepAudioClips, hit.point, Quaternion.identity, null, SurfaceTag);
+            GameObject footstepDecal = SurfaceAudiosWithFX.Play(AudioSource, FootstepAudioClips, groundHit.point, Quaternion.identity, null, groundHit.collider.tag);
 
-            // Finish current footstep if decal is null
-            if (FootstepDecal == null) { return; }
-            Transform Decal = FootstepDecal.transform;
-            // Set Footstep Decal rotation
-            Decal.rotation = Foot.rotation;
+            if (!footstepDecal)
+                return;
 
-            // Aligh Footstep Decal to ground angle
-            Decal.rotation = Quaternion.FromToRotation(Foot.up, hit.normal) * Foot.rotation;
+            Transform decalTransform = footstepDecal.transform;
 
-            // Invert Footstep Decal direction
-            Decal.rotation = Quaternion.LookRotation(-Decal.forward);
+            // Align decal with ground.
+            decalTransform.rotation = Quaternion.LookRotation(groundHit.normal) * Quaternion.Euler(90, 0, 0);
+
+            // Look to the character move direction.
+            var forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+            forward /= forward.magnitude;
+            decalTransform.rotation *= Quaternion.LookRotation(forward);
 
             // Fix Footstep Decal sides fix
-            if (Foot == RightFoot)
+            if (foot == RightFoot)
             {
-                Decal.localScale = new Vector3(InvertX ? Decal.localScale.x : -Decal.localScale.x, Decal.localScale.y, Decal.localScale.z);
+                Vector3 decalScale = decalTransform.localScale;
+                decalScale.x *= -1;
+
+                if (InvertX)
+                    decalScale.x *= -1;
+
+                decalTransform.localScale = decalScale;
             }
             else
             {
-                Decal.localScale = new Vector3(InvertX ? -Decal.localScale.x : Decal.localScale.x, Decal.localScale.y, Decal.localScale.z);
+                Vector3 decalScale = decalTransform.localScale;
+                if (InvertX)
+                    decalScale.x *= -1;
+
+                decalTransform.localScale = decalScale;
             }
 
             // Draw a line in the upward direction of the Footstep Decal
-            Debug.DrawRay(FootstepDecal.transform.position, FootstepDecal.transform.up * 2, Color.red, 1);
+            Debug.DrawRay(footstepDecal.transform.position, footstepDecal.transform.up * 2, Color.red, 1);
+        }
 
+        private void UpdateFootstepActiveByDistance()
+        {
+            if (!AudioSource)
+            {
+                return;
+            }
+
+            _checkFootstepActiveTimer += Time.deltaTime;
+            if (_checkFootstepActiveTimer < CHECK_FOOTSTEP_DISTANCE_INTERVAL)
+            {
+                return;
+            }
+
+            if (_mainCamera && !_mainCamera.isActiveAndEnabled)
+            {
+                _mainCamera = null;
+            }
+
+            if (!_mainCamera)
+            {
+                _mainCamera = Camera.main;
+            }
+
+            if (!_mainCamera)
+            {
+                return;
+            }
+
+            _checkFootstepActiveTimer = 0;
+            IsFootsepActing = Vector3.Distance(transform.position, _mainCamera.transform.position) < MaxFootstepDistance;
+            AudioSource.enabled = IsFootsepActing;
+        }
+
+        private void OnDrawGizmos()
+        {
+            if (LeftFoot == null || RightFoot == null)
+            {
+                Animator = GetComponent<Animator>();
+                LeftFoot = Animator.GetBoneTransform(HumanBodyBones.LeftFoot);
+                RightFoot = Animator.GetBoneTransform(HumanBodyBones.RightFoot);
+                return;
+            }
+            Color collisionColor = Color.green;
+            collisionColor.a = 0.4f;
+
+            Color noCollisionColor = Color.red;
+            noCollisionColor.a = 0.2f;
+
+            Gizmos.color = _leftFootGrounded ? collisionColor : noCollisionColor;
+            Gizmos.DrawSphere(LeftFootCheckerPosition, CheckDistance / 2);
+            Gizmos.DrawWireSphere(LeftFootCheckerPosition, CheckDistance / 2);
+
+            Gizmos.color = _rightFootGrounded ? collisionColor : noCollisionColor;
+            Gizmos.DrawSphere(RightFootCheckerPosition, CheckDistance / 2);
+            Gizmos.DrawWireSphere(RightFootCheckerPosition, CheckDistance / 2);
         }
 
 #if UNITY_EDITOR
-        private static AudioClip clip;
-
         [ContextMenu("Load Default Footstep Audios", false, 100)]
         public void LoadDefaultFootstepInInspector()
         {
             LoadDefaultFootstepAudios(this);
         }
-        public static void LoadDefaultFootstepAudios(JUFootstep footsteper, string path = "Assets/Julhiecio TPS Controller/Audio/Footstep/")
+
+        private static void LoadDefaultFootstepAudios(JUFootstep footsteper, string path = "Assets/Julhiecio TPS Controller/Audio/Footstep/")
         {
             if (!System.IO.Directory.Exists(path))
             {
@@ -155,90 +331,55 @@ namespace JUTPS.FX
                 return;
             }
 
-            var footstepClips = new List<SurfaceAudiosWithFX>();
-            //Add empty cases
+            // Create empty audio slots.
+            footsteper.FootstepAudioClips = new SurfaceAudiosWithFX[4];
             for (int i = 0; i < 4; i++)
             {
-                footstepClips.Add(new SurfaceAudiosWithFX());
+                footsteper.FootstepAudioClips[i] = new SurfaceAudiosWithFX();
                 for (int x = 0; x < 4; x++)
-                {
-                    footstepClips[i].AudioClips.Add(clip);
-                }
+                    footsteper.FootstepAudioClips[i].AudioClips.Add(null);
             }
 
-            footsteper.FootstepAudioClips = footstepClips.ToArray();
-
-            //Load Footstep Audios
+            //Load Footstep Audios.
             footsteper.FootstepAudioClips[0].SurfaceTag = "Untagged";
             for (int i = 0; i < 4; i++)
             {
-                string audioClipPath = path + "Concrete/Footstep on Concrete 0" + (i + 1) + " OGG.ogg";
-                if (!System.IO.File.Exists(audioClipPath))
-                {
-                    Debug.LogWarning("Unable to load default audio: " + audioClipPath);
-                }
-                footsteper.FootstepAudioClips[0].AudioClips[i] = AssetDatabase.LoadAssetAtPath<AudioClip>(audioClipPath);
+                string audioClipPath = $"{path}Concrete/Footstep on Concrete 0{i + 1}.ogg";
+                footsteper.FootstepAudioClips[0].AudioClips[i] = LoadAsset<AudioClip>(audioClipPath);
             }
 
             footsteper.FootstepAudioClips[1].SurfaceTag = "Stone";
             for (int i = 0; i < 4; i++)
             {
-                //Assets/Julhiecio TPS Controller/Audio/Footstep/CC0 Sounds/Stones/Footsteps-on-stone01.ogg
-                string audioClipPath = path + "Stones/Footsteps-on-stone0" + (i + 1) + ".ogg";
-                if (!System.IO.File.Exists(audioClipPath))
-                {
-                    Debug.LogWarning("Unable to load default audio: " + audioClipPath);
-                }
-                footsteper.FootstepAudioClips[1].AudioClips[i] = AssetDatabase.LoadAssetAtPath<AudioClip>(audioClipPath);
+                string audioClipPath = $"{path}Stones/Footsteps-on-stone0{i + 1}.ogg";
+                footsteper.FootstepAudioClips[1].AudioClips[i] = LoadAsset<AudioClip>(audioClipPath);
             }
 
             footsteper.FootstepAudioClips[2].SurfaceTag = "Grass";
             for (int i = 0; i < 4; i++)
             {
-                string audioClipPath = path + "Grass/Footsteps-on-grass0" + (i + 1) + ".ogg";
-                if (!System.IO.File.Exists(audioClipPath))
-                {
-                    Debug.LogWarning("Unable to load default audio: " + audioClipPath);
-                }
-                footsteper.FootstepAudioClips[2].AudioClips[i] = AssetDatabase.LoadAssetAtPath<AudioClip>(audioClipPath);
+                string audioClipPath = $"{path}Grass/Footsteps-on-grass0{i + 1}.ogg";
+                footsteper.FootstepAudioClips[2].AudioClips[i] = LoadAsset<AudioClip>(audioClipPath);
             }
 
             footsteper.FootstepAudioClips[3].SurfaceTag = "Tiles";
             for (int i = 0; i < 4; i++)
             {
-                string audioClipPath = path + "Tiles/Footstep-on-tiles0" + (i + 1) + ".ogg";
-                if (!System.IO.File.Exists(audioClipPath))
-                {
-                    Debug.LogWarning("Unable to load default audio: " + audioClipPath);
-                }
-                footsteper.FootstepAudioClips[3].AudioClips[i] = AssetDatabase.LoadAssetAtPath<AudioClip>(audioClipPath);
+                string audioClipPath = $"{path}Tiles/Footstep-on-tiles0{i + 1}.ogg";
+                footsteper.FootstepAudioClips[3].AudioClips[i] = LoadAsset<AudioClip>(audioClipPath);
             }
+        }
+
+        private static T LoadAsset<T>(string path) where T : Object
+        {
+            if (!System.IO.File.Exists(path))
+            {
+                Debug.LogWarning($"Unable to load asset {typeof(T).Name}: {path}");
+                return null;
+            }
+
+            return AssetDatabase.LoadAssetAtPath<T>(path);
         }
 #endif
-        void OnDrawGizmos()
-        {
-            if (LeftFoot == null || RightFoot == null)
-            {
-                anim = GetComponent<Animator>();
-                LeftFoot = anim.GetBoneTransform(HumanBodyBones.LeftFoot);
-                RightFoot = anim.GetBoneTransform(HumanBodyBones.RightFoot);
-                return;
-            }
-            Color CollisionColor = Color.green;
-            CollisionColor.a = 0.4f;
-            Color NoCollisionColor = Color.red;
-            NoCollisionColor.a = 0.2f;
-
-            Vector3 LeftFootPosition = LeftFoot.position + transform.forward * ForwardOffset + transform.up * UpOffset;
-            Vector3 RightFootPosition = RightFoot.position + transform.forward * ForwardOffset + transform.up * UpOffset;
-
-            if (LeftFootsteped) { Gizmos.color = CollisionColor; } else { Gizmos.color = NoCollisionColor; }
-            Gizmos.DrawSphere(LeftFootPosition, CheckRadius);
-            Gizmos.DrawWireSphere(LeftFootPosition, CheckRadius);
-
-            if (RightFootsteped) { Gizmos.color = CollisionColor; } else { Gizmos.color = NoCollisionColor; }
-            Gizmos.DrawSphere(RightFootPosition, CheckRadius);
-            Gizmos.DrawWireSphere(RightFootPosition, CheckRadius);
-        }
     }
 }

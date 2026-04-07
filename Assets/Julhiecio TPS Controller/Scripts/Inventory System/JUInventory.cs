@@ -1,11 +1,10 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using JUTPS;
+﻿using JUTPS.ArmorSystem;
 using JUTPS.ItemSystem;
+using JUTPS.JUInputSystem;
 using JUTPS.WeaponSystem;
-using JUTPS.ArmorSystem;
 using JUTPSEditor.JUHeader;
+using UnityEngine;
+using UnityEngine.Events;
 
 namespace JUTPS.InventorySystem
 {
@@ -42,9 +41,11 @@ namespace JUTPS.InventorySystem
 
         [JUHeader("PickUp System")]
         public bool EnablePickup = true;
+        public bool UsePlayerInputs;
+        public JUPlayerCharacterInputAsset PlayerInputs;
         public LayerMask ItemLayer;
         public Vector3 CheckerOffset;
-        public float CheckerRadious = 1;
+        public float CheckerRadius = 1;
         public bool UseDefaultInputToPickUp = true;
         public bool AutoEquipPickedUpItems = true;
         [Range(0, 1)]
@@ -63,6 +64,10 @@ namespace JUTPS.InventorySystem
 
         //[HideInInspector] public GameObject ItemToPickup;
         [HideInInspector] public int CurrentRightHandItemID = -1, CurrentLeftHandItemID = -1; // [-1] = Hand
+
+        [JUHeader("Events ")]
+        public UnityEvent OnPickUpItem;
+        public UnityEvent OnSwitchItem;
 
         /// <summary>
         /// Return true if the <see cref="JUCharacter"/> is picking a near item.
@@ -83,6 +88,11 @@ namespace JUTPS.InventorySystem
         public bool IsDualWielding
         {
             get => HoldableItemInUseInLeftHand && HoldableItemInUseInRightHand;
+        }
+
+        public JUInventory()
+        {
+            UsePlayerInputs = true;
         }
 
         private void Start()
@@ -161,11 +171,11 @@ namespace JUTPS.InventorySystem
             {
                 JUCharacter = GetComponent<JUTPS.CharacterBrain.JUCharacterBrain>();
             }
-            if (JUCharacter != null)
+            if (JUCharacter == null)
             {
-                if (JUCharacter.anim == null) { JUCharacter.anim = GetComponent<Animator>(); }
+                Debug.LogError("No JU Character Controller/Brain");
+                return;
             }
-            else { Debug.LogError("No JU Character Controller/Brain"); return; }
 
             if (JUCharacter.anim != null)
             {
@@ -203,9 +213,9 @@ namespace JUTPS.InventorySystem
 
         private void CheckItemsAround()
         {
-            if (EnablePickup == false || CheckerRadious < 0.0001) return;
+            if (EnablePickup == false || CheckerRadius < 0.0001) return;
 
-            ItemsAround = Physics.OverlapSphere(transform.TransformPoint(CheckerOffset), 1, ItemLayer);
+            ItemsAround = Physics.OverlapSphere(transform.TransformPoint(CheckerOffset), CheckerRadius, ItemLayer);
 
             if (ItemsAround.Length > 0 && ItemToPickUp == null)
             {
@@ -217,14 +227,19 @@ namespace JUTPS.InventorySystem
             }
 
 
-            if (JUInputSystem.JUInput.GetButton(JUInputSystem.JUInput.Buttons.PickupButton) && ItemToPickUp != null)
+            if (UsePlayerInputs && PlayerInputs && PlayerInputs.IsInteractPressed && ItemToPickUp != null)
             {
                 CurrentHoldTimeToPickUp += Time.deltaTime;
                 if (CurrentHoldTimeToPickUp >= HoldTimeToPickUp)
                 {
+                    CurrentHoldTimeToPickUp = 0;
                     Debug.Log("Trying pickup");
                     PickUp();
                 }
+            }
+            else
+            {
+                CurrentHoldTimeToPickUp = 0;
             }
 
             if (IsPickingItem)
@@ -297,11 +312,21 @@ namespace JUTPS.InventorySystem
 
                     //Get holdable monobehaviour
                     var PickedItemToUnlock = InventoryToAddItem.ItemToPickUp.GetComponent<JUHoldableItem>();
+
                     foreach (JUHoldableItem ItemInInventoryToUnlock in InventoryToAddItem.AllHoldableItems)
                     {
                         //Debug.Log("Called PickUpItem method 3");
                         if (ItemInInventoryToUnlock.ItemName == PickedItemToUnlock.ItemName && ItemInInventoryToUnlock.IsLeftHandItem == PickedItemToUnlock.IsLeftHandItem)
                         {
+                            //Check if can pickup item
+                            // Items that are weapons are picked up even if the limit has already been reached
+                            // but it will not add to the quantity of the item, it will only pick up the ammunition. 
+                            if ((ItemInInventoryToUnlock is Weapon) == false && ItemInInventoryToUnlock.Unlocked == true && ItemInInventoryToUnlock.ItemQuantity == ItemInInventoryToUnlock.MaxItemQuantity)
+                            {
+                                Debug.Log(" >>> Pickup failed because you reached the item quantity limit");
+                                return;
+                            }
+
                             //Unlock item on inventory
                             ItemInInventoryToUnlock.Unlocked = true;
 
@@ -313,12 +338,18 @@ namespace JUTPS.InventorySystem
                             //Destroy Item in scenary
                             Destroy(PickedItemToUnlock.gameObject);
 
+
+                            // On Pickup Item Event Call
+                            InventoryToAddItem.OnPickUpItem.Invoke();
+
+
                             //Equip Holdable Item
                             /*ItemSwitchManager switchManager = InventoryToAddItem.GetComponent<ItemSwitchManager>();
                             if (switchManager != null)
                             {
                                 switchManager.SwitchToItem(ItemInInventoryToUnlock.ItemSwitchID);
                             }*/
+
                             InventoryToAddItem.IsPickingItem = true;
 
                             if (InventoryToAddItem.AutoEquipPickedUpItems)
@@ -331,18 +362,28 @@ namespace JUTPS.InventorySystem
                 }
                 else
                 {
-                    foreach (JUItem ItemToAdd in InventoryToAddItem.AllItems)
+                    foreach (JUItem ItemInInventoryToAdd in InventoryToAddItem.AllItems)
                     {
                         var PickedToAdd = InventoryToAddItem.ItemToPickUp;
 
-                        if (ItemToAdd.ItemSwitchID == PickedToAdd.ItemSwitchID && ItemToAdd.ItemName == PickedToAdd.ItemName)
+                        if (ItemInInventoryToAdd.ItemSwitchID == PickedToAdd.ItemSwitchID && ItemInInventoryToAdd.ItemName == PickedToAdd.ItemName)
                         {
+                            //Check if can pickup item
+                            if (ItemInInventoryToAdd.Unlocked == true && ItemInInventoryToAdd.ItemQuantity == ItemInInventoryToAdd.MaxItemQuantity)
+                            {
+                                Debug.Log(" > Pickup failed because you reached the item quantity limit");
+                                return;
+                            }
+
                             //Transfer item data
-                            InventoryToAddItem.AddPickedItemData(ItemToAdd, PickedToAdd);
+                            InventoryToAddItem.AddPickedItemData(ItemInInventoryToAdd, PickedToAdd);
                             InventoryToAddItem.RefreshInBodyItemVisibility();
 
                             //Destroy Item in scenary
                             Destroy(PickedToAdd.gameObject);
+
+                            // On Pickup Item Event Call
+                            InventoryToAddItem.OnPickUpItem.Invoke();
 
                             //Equip Armor
                             /*if(ItemToAdd is Armor)
@@ -350,7 +391,7 @@ namespace JUTPS.InventorySystem
                                 InventoryToAddItem.EquipItem(GetGlobalItemSwitchID(ItemToAdd, InventoryToAddItem));
                             }*/
 
-                            Debug.Log(InventoryToAddItem.gameObject.name + " picked the item: " + ItemToAdd.ItemName);
+                            Debug.Log(InventoryToAddItem.gameObject.name + " picked the item: " + ItemInInventoryToAdd.ItemName);
                             InventoryToAddItem.IsPickingItem = true;
                             return;
                         }
@@ -467,7 +508,7 @@ namespace JUTPS.InventorySystem
         }
         public void SwitchToItem(int id = -1, bool RightHand = true)
         {
-            
+
             //>>> Loop Item Switching
             if (RightHand)
             {
@@ -500,7 +541,7 @@ namespace JUTPS.InventorySystem
             }
             if (RightHand == true)
             {
-             
+
                 //>>> Right Hand Switching
                 foreach (JUHoldableItem item in HoldableItensRightHand)
                 {
@@ -567,6 +608,10 @@ namespace JUTPS.InventorySystem
                     }
                 }
             }
+
+            // On Switch Item Event Call
+            if(id > -1) OnSwitchItem.Invoke();
+            
             UpdateItemInUse();
             RefreshItemsVisibility();
             RefreshInBodyItemVisibility();
@@ -665,9 +710,36 @@ namespace JUTPS.InventorySystem
         }
 
 
-        protected int NextUnlockedItemLocalIndexRightHand(int CurrentID)
+        public int NextUnlockedItemLocalIndexRightHand(int CurrentID)
         {
             int item_id = -1;
+
+            // Force start from a unlocked item if have.
+            if (JUCharacter && !JUCharacter.AllowBareHands)
+            {
+                var tries = 0;
+                while (tries < HoldableItensRightHand.Length)
+                {
+                    item_id += 1;
+                    if (item_id >= HoldableItensRightHand.Length)
+                    {
+                        item_id = -1;
+                        break;
+                    }
+
+                    if (HoldableItensRightHand[item_id].Unlocked && HoldableItensRightHand[item_id].ItemQuantity > 0)
+                        break;
+
+                    tries += 1;
+                }
+
+                // Does not have unlocked items.
+                if (tries >= HoldableItensRightHand.Length)
+                {
+                    item_id = -1;
+                }
+            }
+
             for (int i = CurrentID; i < HoldableItensRightHand.Length; i++)
             {
                 if (i > -1 && i != CurrentID)
@@ -681,7 +753,7 @@ namespace JUTPS.InventorySystem
             }
             return item_id;
         }
-        protected int NextUnlockedItemLocalIndexLeftHand(int CurrentID)
+        public int NextUnlockedItemLocalIndexLeftHand(int CurrentID)
         {
             int item_id = -1;
             for (int i = CurrentID; i < HoldableItensLeftHand.Length; i++)
@@ -700,6 +772,30 @@ namespace JUTPS.InventorySystem
         protected int PreviousUnlockedItemLocalIndexRightHand(int CurrentID)
         {
             int item_id = -1;
+
+            // Force start from a unlocked item if have.
+            if (JUCharacter && !JUCharacter.AllowBareHands)
+            {
+                item_id = Mathf.Max(CurrentID - 1, 0);
+
+                var tries = 0; // Used to avoid stack overflow if does not have unlocked items.
+                while (tries < HoldableItensRightHand.Length)
+                {
+                    if (HoldableItensRightHand[item_id].Unlocked && HoldableItensRightHand[item_id].ItemQuantity > 0)
+                        break;
+
+                    item_id -= 1;
+                    if (item_id < 0)
+                        item_id = HoldableItensRightHand.Length - 1;
+
+                    tries += 1;
+                }
+
+                // Does not have an unlocked item.
+                if (tries >= HoldableItensRightHand.Length)
+                    item_id = -1;
+            }
+
             for (int i = CurrentID; i > -1; i--)
             {
                 if (i > -1 && i != CurrentID)
@@ -820,7 +916,10 @@ namespace JUTPS.InventorySystem
 
         public void GetLootItem(JUItem itemOnThisInventory, JUItem itemOnLoot)
         {
+            //itemOnThisInventory.ItemQuantity = itemOnThisInventory.Unlocked ? itemOnLoot.ItemQuantity : (itemOnThisInventory.ItemQuantity + itemOnLoot.ItemQuantity);
 
+
+            // >>> Get Weapon Data
             if (itemOnThisInventory is Weapon)
             {
                 Weapon localWeapon = itemOnThisInventory as Weapon;
@@ -830,19 +929,21 @@ namespace JUTPS.InventorySystem
                 if (itemOnThisInventory.ItemQuantity == 0)
                 {
                     itemOnThisInventory.ItemQuantity += 1;
+                    itemOnThisInventory.ItemQuantity = Mathf.Clamp(itemOnThisInventory.ItemQuantity, 0, itemOnThisInventory.MaxItemQuantity);
                     itemOnThisInventory.Unlocked = true;
 
                     localWeapon.TotalBullets = lootWeapon.TotalBullets;
                     localWeapon.BulletsAmounts = lootWeapon.BulletsAmounts;
 
                     lootWeapon.Unlocked = false;
-
                 }
                 else
                 {
                     //Get All Bullets
                     localWeapon.TotalBullets += lootWeapon.TotalBullets;
                     itemOnThisInventory.ItemQuantity += 1;
+                    itemOnThisInventory.ItemQuantity = Mathf.Clamp(itemOnThisInventory.ItemQuantity, 0, itemOnThisInventory.MaxItemQuantity);
+
                     //localWeapon.BulletsAmounts = lootWeapon.BulletsAmounts;
 
                     //lootWeapon.ItemQuantity = 0;
@@ -852,10 +953,28 @@ namespace JUTPS.InventorySystem
                 }
                 return;
             }
-            
-            itemOnThisInventory.ItemQuantity = itemOnThisInventory.Unlocked ? itemOnLoot.ItemQuantity : (itemOnThisInventory.ItemQuantity + itemOnLoot.ItemQuantity);
+
+            // >>> Get Item Quantity Data
+            if (itemOnThisInventory is JUHoldableItem)
+            {
+                if (itemOnThisInventory.ItemQuantity == 0)
+                {
+                    itemOnThisInventory.ItemQuantity += 1;
+                    itemOnThisInventory.ItemQuantity = Mathf.Clamp(itemOnThisInventory.ItemQuantity, 0, itemOnThisInventory.MaxItemQuantity);
+                    itemOnThisInventory.Unlocked = true;
+                }
+                else
+                {
+                    itemOnThisInventory.ItemQuantity += 1;
+                    itemOnThisInventory.ItemQuantity = Mathf.Clamp(itemOnThisInventory.ItemQuantity, 0, itemOnThisInventory.MaxItemQuantity);
+                }
+            }
+
+            // Set Item Quantity Data 
+            itemOnThisInventory.ItemQuantity = itemOnThisInventory.Unlocked ? (itemOnThisInventory.ItemQuantity + itemOnLoot.ItemQuantity) : itemOnLoot.ItemQuantity;
             itemOnThisInventory.ItemQuantity = Mathf.Clamp(itemOnThisInventory.ItemQuantity, 0, itemOnThisInventory.MaxItemQuantity);
 
+            // Set Melee Weapons Data
             if (itemOnThisInventory is MeleeWeapon)
             {
                 MeleeWeapon localMeleeWeapon = itemOnThisInventory as MeleeWeapon;
@@ -875,6 +994,7 @@ namespace JUTPS.InventorySystem
                 }
             }
 
+            // Set Armor Items Data
             if (itemOnThisInventory is Armor)
             {
                 Armor localAmor = itemOnThisInventory as Armor;
@@ -893,6 +1013,8 @@ namespace JUTPS.InventorySystem
                     _lootArmor.Health = oldLocalArmorHealth;
                 }
             }
+
+
         }
         public void DropItem(int ID, bool IsRightHandItem = true)
         {
@@ -909,8 +1031,8 @@ namespace JUTPS.InventorySystem
                 dropedItem.transform.localScale = worldScale;
                 EnableItemPhysic(dropedItem);
                 dropedItem.SetActive(true);
-                dropedItem.layer = 14;                
-                
+                dropedItem.layer = 14;
+
                 //Remove / Lock Item
                 HoldableItensRightHand[ID].RemoveItem();
 
@@ -966,12 +1088,24 @@ namespace JUTPS.InventorySystem
                 }
             }
 
-            //Instantiate Item
-            var dropedItem = (GameObject)Instantiate(AllItems[ID].gameObject, DropPosition, Quaternion.identity);
+            // Instantiate Item
+            var dropedItem = (GameObject)Instantiate(AllItems[ID].gameObject, DropPosition, AllItems[ID].transform.rotation);
             dropedItem.transform.localScale = worldScale;
+
+            // Convevert Skinned Mesh Renderer to Mesh Renderer to avoid bugs
+            if (dropedItem.TryGetComponent(out SkinnedMeshRenderer skinnedmesh))
+            {
+                dropedItem.AddComponent<MeshFilter>().sharedMesh = skinnedmesh.sharedMesh;
+                dropedItem.AddComponent<MeshRenderer>().sharedMaterials = skinnedmesh.sharedMaterials;
+                Destroy(skinnedmesh);
+                //Debug.Log("Converted " + dropedItem.name + " Skinned Mesh Renderer to Mesh Renderer on Drop Action");
+            }
+            // Enable In-World Item
             EnableItemPhysic(dropedItem);
             dropedItem.SetActive(true);
             dropedItem.layer = 14;
+
+
 
             //Remove / Lock Item
             AllItems[ID].RemoveItem();
@@ -1002,11 +1136,20 @@ namespace JUTPS.InventorySystem
             if (AllItems[ID].Unlocked == false) return;
 
 
-
-            if (AllItems[ID] is Armor)
+            if (AllItems[ID] is Armor armor)
             {
+                // Unequip old armors that uses the same place of the new armor to equip.
+                foreach (var i in AllItems)
+                {
+                    if (i is Armor otherArmor && otherArmor.Equiped && i.ItemFilterTag == AllItems[ID].ItemFilterTag)
+                    {
+                        UnequipItem(GetGlobalItemSwitchID(i, this));
+                    }
+                }
+
+                armor.Equiped = true;
                 AllItems[ID].gameObject.SetActive(true);
-                //Debug.Log("equiped " + AllItems[ID].gameObject.name);
+                Debug.Log("equiped " + AllItems[ID].gameObject.name);
                 return;
             }
             if ((AllItems[ID].GetType()).IsSubclassOf(typeof(JUHoldableItem)) == false)
@@ -1038,8 +1181,9 @@ namespace JUTPS.InventorySystem
             if (ID < 0 || ID > AllItems.Length || AllItems[ID] == null) return;
             //if (AllItems[ID].Unlocked == false) return;
 
-            if (AllItems[ID] is Armor)
+            if (AllItems[ID] is Armor armor)
             {
+                armor.Equiped = false;
                 AllItems[ID].gameObject.SetActive(false);
                 Debug.Log("Unequiped " + AllItems[ID].gameObject.name);
 
@@ -1125,7 +1269,7 @@ namespace JUTPS.InventorySystem
 
             //PickUp
             if (!EnablePickup) return;
-            Gizmos.DrawWireSphere(transform.TransformPoint(CheckerOffset), CheckerRadious);
+            Gizmos.DrawWireSphere(transform.TransformPoint(CheckerOffset), CheckerRadius);
         }
 
 

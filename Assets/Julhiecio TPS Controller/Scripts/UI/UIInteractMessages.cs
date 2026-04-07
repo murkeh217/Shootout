@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using JUTPS.ActionScripts;
+using JUTPS.InteractionSystem;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,16 +16,15 @@ namespace JUTPS.UI
         [SerializeField] private bool ShowItemNameOnText;
         [SerializeField] private Text WarningText;
         [SerializeField] private string PickUpLabelText = "[HOLD] TO PICK UP ";
-        [Header("Vehicle Enter Message")]
-        [SerializeField] private string VehicleEnterLabelText = "TO DRIVE";
-        [SerializeField] private Vector3 VehicleOffset;
+        [Header("Interaction Message")]
+        [SerializeField] private string InteractLabelText = "TO INTERACT";
         [Header("Cover Trigger Message")]
         [SerializeField] private string CoverLabelText = "TO COVER";
         CoverSystem.JUCoverController PlayerCover;
 
         private void Start()
         {
-            JUGameManager.PlayerController = JUGameManager.Instance.GetPlayer();
+            JUGameManager.PlayerController = JUGameManager.PlayerController;
             if (JUGameManager.PlayerController.TryGetComponent(out CoverSystem.JUCoverController cover))
             {
                 PlayerCover = cover;
@@ -39,7 +39,7 @@ namespace JUTPS.UI
                 if (PlayerCover.CurrentCoverTrigger != null && PlayerCover.IsCovering == false && PlayerCover.AutoMode == false)
                 {
                     PickUpMessageObject.SetActive(true);
-                    UIElementToWorldPosition.SetUIWorldPosition(PickUpMessageObject, PlayerCover.CurrentCoverTrigger.GetCoverWallClosestPoint(PlayerCover.transform.position) + PlayerCover.transform.up * PlayerCover.CurrentCoverTrigger.transform.localScale.y / 2, VehicleOffset);
+                    UIElementToWorldPosition.SetUIWorldPosition(PickUpMessageObject, PlayerCover.CurrentCoverTrigger.GetCoverWallClosestPoint(PlayerCover.transform.position) + PlayerCover.transform.up * PlayerCover.CurrentCoverTrigger.transform.localScale.y / 2, Offset);
                     if (WarningText)
                     {
                         WarningText.text = CoverLabelText;
@@ -60,24 +60,27 @@ namespace JUTPS.UI
                 return;
             }
 
-            // >> Vehicle Message
-            if (JUGameManager.PlayerController.TryGetComponent<DriveVehicles>(out var characterDrivesVehicle))
+            // >> Interaction Message
+            if (JUGameManager.PlayerController.TryGetComponent<JUInteractionSystem>(out var interactionSystem))
             {
-                var canEnterVehicle = characterDrivesVehicle.NearestVehicle && characterDrivesVehicle.CanEnterVehicle;
+                var canInteract = interactionSystem.CanInteract(interactionSystem.NearestInteractable);
+                if (interactionSystem.BlockInteractions)
+                    canInteract = false;
 
-                if (characterDrivesVehicle.NearestVehicleCharacterIK)
-                {
-                    if (!characterDrivesVehicle.NearestVehicleCharacterIK.CharactersCanGetVehicle)
-                        canEnterVehicle = false;
-                }
-
-                if (canEnterVehicle)
+                if (canInteract)
                 {
                     PickUpMessageObject.SetActive(true);
-                    UIElementToWorldPosition.SetUIWorldPosition(PickUpMessageObject, characterDrivesVehicle.NearestVehicle.transform.position, VehicleOffset);
+                    UIElementToWorldPosition.SetUIWorldPosition(PickUpMessageObject, interactionSystem.NearestInteractable.SelfCenter, Offset);
                     if (WarningText)
                     {
-                        WarningText.text = VehicleEnterLabelText;
+                        if (interactionSystem.NearestInteractable is JUTPS.InteractionSystem.Interactables.JUGeneralInteractable)
+                        {
+                            WarningText.text = (interactionSystem.NearestInteractable as InteractionSystem.Interactables.JUGeneralInteractable).InteractMessage;
+                        }
+                        else
+                        {
+                            WarningText.text = InteractLabelText;
+                        }
                     }
 
                     return;

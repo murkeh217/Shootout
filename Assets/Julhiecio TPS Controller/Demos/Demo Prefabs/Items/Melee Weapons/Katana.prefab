@@ -71,21 +71,25 @@ MonoBehaviour:
     - {fileID: 8300000, guid: a3a3a8e85dc037d4ba055b5fd525a4dc, type: 3}
     Effects:
     - {fileID: 3377176041485713299, guid: d9ad05da0af838d48ae568355f9ee5a7, type: 3}
+    EffectsLifeTime: 5
   - SurfaceTag: Skin
     AudioClips:
     - {fileID: 8300000, guid: 9c2f28c118e432c41adfd5df1055c209, type: 3}
     Effects:
     - {fileID: 3377176041485713299, guid: f5973a37858ed07439978e742b77a3af, type: 3}
+    EffectsLifeTime: 5
   - SurfaceTag: Enemy
     AudioClips:
     - {fileID: 8300000, guid: 9c2f28c118e432c41adfd5df1055c209, type: 3}
     Effects:
     - {fileID: 3377176041485713299, guid: f5973a37858ed07439978e742b77a3af, type: 3}
+    EffectsLifeTime: 5
   - SurfaceTag: Player
     AudioClips:
     - {fileID: 8300000, guid: 9c2f28c118e432c41adfd5df1055c209, type: 3}
     Effects:
     - {fileID: 3377176041485713299, guid: f5973a37858ed07439978e742b77a3af, type: 3}
+    EffectsLifeTime: 5
   HitSoundsAudioSource: {fileID: 5143966286223321233}
 --- !u!82 &5143966286223321233
 AudioSource:
@@ -224,6 +228,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2dd2ca464ee8eb24194599ee8dfd276b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AudioTag: {fileID: 11400000, guid: b7f60ffc055fd01479c79dd9351b4dff, type: 2}
   AudioSource: {fileID: 5143966286223321233}
 --- !u!1 &5143966286480557521
 GameObject:
@@ -468,6 +473,7 @@ MonoBehaviour:
   MaxItemQuantity: 1
   ItemName: Katana
   ItemSwitchID: 0
+  CanUseItem: 1
   Owner: {fileID: 0}
   TPSOwner: {fileID: 0}
   WeaponRotationCenter: {fileID: 0}
@@ -478,7 +484,6 @@ MonoBehaviour:
   ItemModelInBody: {fileID: 0}
   TimeToUse: 0
   CurrentTimeToUse: 0
-  CanUseItem: 1
   IsUsingItem: 0
   ItemWieldPositionID: 0
   IsLeftHandItem: 0

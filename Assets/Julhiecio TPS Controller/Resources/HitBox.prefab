@@ -71,21 +71,25 @@ MonoBehaviour:
     - {fileID: 8300000, guid: a3a3a8e85dc037d4ba055b5fd525a4dc, type: 3}
     Effects:
     - {fileID: 3377176041485713299, guid: d9ad05da0af838d48ae568355f9ee5a7, type: 3}
+    EffectsLifeTime: 5
   - SurfaceTag: Skin
     AudioClips:
     - {fileID: 8300000, guid: 9c2f28c118e432c41adfd5df1055c209, type: 3}
     Effects:
     - {fileID: 3377176041485713299, guid: f5973a37858ed07439978e742b77a3af, type: 3}
+    EffectsLifeTime: 5
   - SurfaceTag: Enemy
     AudioClips:
     - {fileID: 8300000, guid: 9c2f28c118e432c41adfd5df1055c209, type: 3}
     Effects:
     - {fileID: 3377176041485713299, guid: f5973a37858ed07439978e742b77a3af, type: 3}
+    EffectsLifeTime: 5
   - SurfaceTag: Player
     AudioClips:
     - {fileID: 8300000, guid: 9c2f28c118e432c41adfd5df1055c209, type: 3}
     Effects:
     - {fileID: 3377176041485713299, guid: f5973a37858ed07439978e742b77a3af, type: 3}
+    EffectsLifeTime: 5
   HitSoundsAudioSource: {fileID: 8596535375398625462}
 --- !u!65 &2504160735544334013
 BoxCollider:
@@ -331,4 +335,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2dd2ca464ee8eb24194599ee8dfd276b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AudioTag: {fileID: 11400000, guid: b7f60ffc055fd01479c79dd9351b4dff, type: 2}
   AudioSource: {fileID: 8596535375398625462}

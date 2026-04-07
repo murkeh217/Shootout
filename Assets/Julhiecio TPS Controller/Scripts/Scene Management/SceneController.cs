@@ -110,8 +110,7 @@ namespace JUTPS
             PlayerController.transform.position = RespawnPlayerPostion;
 
             //Reset Health
-            PlayerController.CharacterHealth.Health = PlayerController.CharacterHealth.MaxHealth;
-            PlayerController.IsDead = false;
+            PlayerController.CharacterHealth.ResetHealth();
 
             //Reset layer
             PlayerController.gameObject.layer = 9;
@@ -128,7 +127,7 @@ namespace JUTPS
             {
                 rigidbody.useGravity = true;
                 rigidbody.isKinematic = false;
-                rigidbody.linearVelocity = transform.up * PlayerController.GetComponent<Rigidbody>().linearVelocity.y;
+                rigidbody.velocity = transform.up * PlayerController.GetComponent<Rigidbody>().velocity.y;
                 rigidbody.constraints = RigidbodyConstraints.None | RigidbodyConstraints.FreezeRotation;
             }
 

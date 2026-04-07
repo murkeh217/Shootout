@@ -1672,7 +1672,6 @@ GameObject:
   - component: {fileID: 5478340313042597208}
   - component: {fileID: 5478340313042597223}
   - component: {fileID: 5478340313042597213}
-  - component: {fileID: 5478340313042597211}
   - component: {fileID: 5478340313042597220}
   - component: {fileID: 5478340313042597219}
   - component: {fileID: 5478340313042597221}
@@ -1683,6 +1682,8 @@ GameObject:
   - component: {fileID: -5100158239406911501}
   - component: {fileID: -1973353057643713833}
   - component: {fileID: -2117882258034853240}
+  - component: {fileID: 6803760479835852774}
+  - component: {fileID: -6524131103479612681}
   m_Layer: 9
   m_Name: 2D Sidescroller Player
   m_TagString: Player
@@ -1742,7 +1743,7 @@ CapsuleCollider:
   m_Center: {x: 0, y: 0.85, z: 0}
 --- !u!95 &2120189185054357183
 Animator:
-  serializedVersion: 3
+  serializedVersion: 5
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -1755,10 +1756,12 @@ Animator:
   m_UpdateMode: 0
   m_ApplyRootMotion: 1
   m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
   m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorControllerStateOnDisable: 0
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!82 &5478340313042597208
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1867,22 +1870,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: be2f1b4d5da6234438ceca64fb2aa3f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  UpDirection: {x: 0, y: 0, z: 0}
-  UpOrientation: {x: 0, y: 0, z: 0, w: 0}
-  anim: {fileID: 0}
-  rb: {fileID: 0}
-  coll: {fileID: 0}
-  MyPivotCamera: {fileID: 0}
-  CharacterHealth: {fileID: 5478340313042597213}
-  DriveVehicleAbility: {fileID: 0}
-  Inventory: {fileID: 0}
-  LeftHandDamager: {fileID: 0}
-  RightHandDamager: {fileID: 0}
-  LeftFootDamager: {fileID: 0}
-  RightFootDamager: {fileID: 0}
-  VelocityMultiplier: 0
-  DirectionTransform: {fileID: 0}
-  DesiredDirection: {x: 0, y: 0, z: 0}
   LocomotionMode: 0
   SetRigidbodyVelocity: 1
   FireModeMaxTime: 1
@@ -1979,7 +1966,7 @@ MonoBehaviour:
   EnableUngroundedStepUp: 1
   UngroundedStepUpSpeed: 4
   UngroundedStepUpRayDistance: 0.1
-  StopingTimeOnStepPosition: 0.2
+  StoppingTimeOnStepPosition: 0.5
   AnimatorParameters:
     _BaseLayerIndex: 0
     _LegsLayerIndex: 1
@@ -2015,54 +2002,21 @@ MonoBehaviour:
   WeaponHoldingPositions: {fileID: 0}
   HoldableItemInUseRightHand: {fileID: 0}
   HoldableItemInUseLeftHand: {fileID: 0}
-  WeaponInUseRightHand: {fileID: 0}
-  WeaponInUseLeftHand: {fileID: 0}
-  MeleeWeaponInUseRightHand: {fileID: 0}
-  MeleeWeaponInUseLeftHand: {fileID: 0}
   AimMode: 0
   FireModeWalkSpeed: 0.5
   FireModeRunSpeed: 1.3
   FireModeCrouchSpeed: 0.5
-  IKPositionRightHand: {fileID: 0}
-  IKPositionLeftHand: {fileID: 0}
   HumanoidSpine: {fileID: 0}
-  RightFootBone: {fileID: 0}
-  LeftFootBone: {fileID: 0}
-  LeftHandWeightIK: 0
-  RightHandWeightIK: 0
   CurrentTimeToDisableFireMode: 0
-  VehicleInArea: {fileID: 0}
-  CharacterHitBoxes: []
-  IsDead: 0
-  DisableAllMove: 0
-  CanMove: 0
-  CanRotate: 1
-  IsMoving: 0
-  IsRunning: 0
-  IsSprinting: 0
-  IsCrouched: 0
-  IsProne: 0
-  CanJump: 0
-  IsJumping: 0
-  IsGrounded: 1
-  IsSliding: 0
-  IsMeleeAttacking: 0
-  IsPunching: 0
-  IsItemEquiped: 0
-  IsDualWielding: 0
-  IsAiming: 0
-  FiringMode: 0
-  FiringModeIK: 1
-  ToPickupItem: 0
-  IsRolling: 0
-  IsRagdolled: 0
-  IsDriving: 0
-  UsedItem: 0
-  IsReloading: 0
-  WallAHead: 0
-  IsWeaponSwitching: 0
-  InverseKinematics: 1
-  IsArtificialIntelligence: 0
+  CharacterDebug:
+    OnlyInEditMode: 0
+    StepUpCorrection: 1
+    GroundCheck: 1
+    GizmosColor: {r: 0, g: 0, b: 0, a: 0.5}
+    WireGizmosColor: {r: 0.9, g: 0.4, b: 0.2, a: 0.5}
+    StepVisualizerMesh: {fileID: 0}
+  Inputs: {fileID: 11400000, guid: ff1213277a08894448d450d5b8623d55, type: 2}
+  ItemToEquipOnStart: -1
   UseDefaultControllerInput: 1
   AutoRun: 1
   WalkOnRunButton: 0
@@ -2072,7 +2026,11 @@ MonoBehaviour:
   BlockFireModeOnCursorVisible: 1
   BlockFireModeOnPunching: 1
   EnablePunchAttacks: 1
+  EnableMeleeWeaponsAttacks: 1
+  EnableShot: 1
   EnableRoll: 1
+  EnableAim: 1
+  EnableProne: 1
   PhysicalDamage: 1
   DoRagdollPhysicalDamage: 1
   PhysicalDamageStartAt: 10
@@ -2081,9 +2039,11 @@ MonoBehaviour:
   PhysicalDamageIgnoreTags:
   - Player
   - Enemy
-  - Bones
-  - Wall
   - Bullet
+  RightElbowAdjustWeight: 0.5
+  LeftElbowAdjustWeight: 0
+  LookAtBodyWeight: 0.5
+  HeadIKBodyWeight: 1
 --- !u!114 &5478340313042597213
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2096,37 +2056,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa2549d042f8b6d41bb6289069865f19, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Health: 100
-  MaxHealth: 100
-  BloodScreenEffect: 0
-  BloodHitParticle: {fileID: 3377176041485713299, guid: f5973a37858ed07439978e742b77a3af,
+  _health: 100
+  _maxHealth: 100
+  _bloodScreenEffect: 1
+  _bloodHitParticle: {fileID: 3377176041485713299, guid: f5973a37858ed07439978e742b77a3af,
     type: 3}
-  OnDeath:
+  _onDeath:
     m_PersistentCalls:
       m_Calls: []
-  IsDead: 0
---- !u!114 &5478340313042597211
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4667858609349572223}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c1571549826a8de4ea21dc78474448f9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  IsPlayer: 1
-  UseOldInputSystem: 0
-  JuTPSCharacter: {fileID: 5478340313042597223}
-  ItemToEquipOnStart: 0
-  EnableNextAndPreviousWeaponSwitch: 1
-  CustomNextWeaponKeyCode: 0
-  CustomPreviousWeaponKeycode: 0
-  EnableAlphaNumericWeaponSwitch: 0
-  EnableMouseScrollWeaponSwitch: 1
-  ScrollThreshold: 0.1
+  _onDamage:
+    m_PersistentCalls:
+      m_Calls: []
+  _onHealthAdded:
+    m_PersistentCalls:
+      m_Calls: []
+  _onResetHealth:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &5478340313042597220
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2170,7 +2116,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e4c0b46aa90a2448a4767ed100b53de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  audioSource: {fileID: 0}
+  AudioSource: {fileID: 0}
   FootstepAudioClips:
   - SurfaceTag: Untagged
     AudioClips:
@@ -2179,6 +2125,7 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 78e2ce3c64e256742a7439d674f2c5d7, type: 3}
     - {fileID: 8300000, guid: 1f97e96c6a43950469f0841f3a2dd8eb, type: 3}
     Effects: []
+    EffectsLifeTime: 5
   - SurfaceTag: Stone
     AudioClips:
     - {fileID: 8300000, guid: 552ef03bc34126f4a9664ffa15e18a3e, type: 3}
@@ -2186,6 +2133,7 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 68bfc9eea80c1fa4f8b6c67c39b0d632, type: 3}
     - {fileID: 8300000, guid: 4c809cb150ac6524fa03e1a56d188974, type: 3}
     Effects: []
+    EffectsLifeTime: 5
   - SurfaceTag: Grass
     AudioClips:
     - {fileID: 8300000, guid: 7d6c4c413e2993648836914486367399, type: 3}
@@ -2193,6 +2141,7 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 196174c6690290c46b18708bc8352d1c, type: 3}
     - {fileID: 8300000, guid: 9b7426b90bc845a42b6aa7130b6b0834, type: 3}
     Effects: []
+    EffectsLifeTime: 5
   - SurfaceTag: Tiles
     AudioClips:
     - {fileID: 8300000, guid: d4ca11b41b110a5408e14d099b2bcba7, type: 3}
@@ -2200,16 +2149,24 @@ MonoBehaviour:
     - {fileID: 8300000, guid: ad91f6dd1877ac24eaa9f10474597ced, type: 3}
     - {fileID: 8300000, guid: 26f502cf42482a44996df100ebd487b4, type: 3}
     Effects: []
+    EffectsLifeTime: 5
   InvertX: 0
   MinTimeToPlayAudio: 0.3
   GroundLayers:
     serializedVersion: 2
     m_Bits: 0
-  CheckRadius: 0.1
+  CheckDistance: 0.2
   UpOffset: -0.07
   ForwardOffset: 0.07
   LeftFoot: {fileID: 550768033902317724}
   RightFoot: {fileID: 5776929962001719042}
+  MaxFootstepDistance: 20
+  OnLeftFootHit:
+    m_PersistentCalls:
+      m_Calls: []
+  OnRightFootHit:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &5478340313042597222
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2236,6 +2193,8 @@ MonoBehaviour:
   LeftFootHeightCurveName: LeftFootHeight
   RightFootHeightCurveName: RightFootHeight
   SmoothIKTransition: 1
+  SpeedInTransition: 6
+  SpeedOutTransition: 6
   FootHeightMultiplier: 0.6
   GlobalWeight: 1
   LeftFootHeightFromGround: 0
@@ -2287,6 +2246,8 @@ MonoBehaviour:
   UpOffset: 0
   FireModeWhenHasJoystickDirection: 1
   SidescrollerAimMode: 1
+  AngleAdjust: 0.1
+  AngleAdjustThreshold: 1
   IsUsingJoystick: 0
 --- !u!114 &1870948902
 MonoBehaviour:
@@ -2332,11 +2293,13 @@ MonoBehaviour:
   - SelectedSlot: 9
     ItemInThisSlot: {fileID: 0}
   EnablePickup: 1
+  UsePlayerInputs: 1
+  PlayerInputs: {fileID: 11400000, guid: ff1213277a08894448d450d5b8623d55, type: 2}
   ItemLayer:
     serializedVersion: 2
     m_Bits: 16384
   CheckerOffset: {x: 0, y: 0, z: 0}
-  CheckerRadious: 1
+  CheckerRadius: 1
   UseDefaultInputToPickUp: 1
   AutoEquipPickedUpItems: 1
   HoldTimeToPickUp: 0.05
@@ -2401,7 +2364,60 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2dd2ca464ee8eb24194599ee8dfd276b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AudioTag: {fileID: 11400000, guid: b7f60ffc055fd01479c79dd9351b4dff, type: 2}
   AudioSource: {fileID: 5478340313042597208}
+--- !u!114 &6803760479835852774
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4667858609349572223}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 579edad838c422e4d92d06d67e352e8a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  UseDefaultInputs: 1
+  Inputs: {fileID: 11400000, guid: ff1213277a08894448d450d5b8623d55, type: 2}
+  FindInteractables:
+    Layer:
+      serializedVersion: 2
+      m_Bits: 65541
+    AvoidObstacles: 1
+    CheckRange: 2
+    AutoCheck: 1
+    AutoCheckInterval: 0.5
+  InteractionEnabled: 1
+  OnInteract:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &-6524131103479612681
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4667858609349572223}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5238e6384da25284e8adadb2e9544db5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _startVehicle: {fileID: 0}
+  ExitVehiclesEnabled: 1
+  DisableCharacterOnEnter: 0
+  DelayToReenableAction: 0.4
+  MaxVehicleSpeedToExit: 1000
+  GroundLayer:
+    serializedVersion: 2
+    m_Bits: 1
+  OnEnterVehicle:
+    m_PersistentCalls:
+      m_Calls: []
+  OnExitVehicle:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &4699343874598970587
 GameObject:
   m_ObjectHideFlags: 0

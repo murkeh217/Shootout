@@ -64,8 +64,6 @@ namespace JUTPS.PhysicsScripts
         public float HeadFeetDistance() { return Vector3.Distance(head.position, GetMiddlePointBetweenFeets()); }
         private void GetFeetReferences()
         {
-            if (anim == null) { anim = GetComponent<Animator>(); }
-
             head = anim.GetBoneTransform(HumanBodyBones.Head);
             rightFoot = anim.GetBoneTransform(HumanBodyBones.RightFoot);
             leftFoot = anim.GetBoneTransform(HumanBodyBones.LeftFoot);

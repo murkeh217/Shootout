@@ -232,7 +232,7 @@ GameObject:
   - component: {fileID: 2529337107259574472}
   m_Layer: 8
   m_Name: Car AI
-  m_TagString: Untagged
+  m_TagString: Vehicle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -259,6 +259,7 @@ Transform:
   - {fileID: 6404224667010958889}
   - {fileID: 8623623912493004047}
   - {fileID: 5580449935194933882}
+  - {fileID: 7004837789833485841}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -303,7 +304,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58c61ca88a8fac419690bcaa49ec557, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  UseDefaultInputs: 0
+  IsOn: 1
+  ControlsEnabled: 1
+  UsePlayerInputs: 0
+  PlayerInputs: {fileID: 11400000, guid: be455aa438e8dc04899a8578b3ce7ef1, type: 2}
   Engine:
     MaxForwardSpeed: 30
     MaxRearSpeed: 20
@@ -367,8 +371,6 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   RotateToUpInAirSpeed: 1
-  IsOn: 1
-  ControlsEnabled: 1
   _wheelAxles:
   - ThrottleInfluence: 1
     BrakeInfluence: 1
@@ -458,7 +460,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57b76bb4d21f5654aae48bafd91b9a5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CharactersCanGetVehicle: 1
   CharacterExitingPosition: {x: -1, y: 0, z: 0}
   InverseKinematicTargetPositions:
     CharacterPosition: {fileID: 6404224667010958889}
@@ -1699,6 +1700,66 @@ MonoBehaviour:
   GizmoColor: {r: 0.2, g: 0.2, b: 0.2, a: 0.5}
   WireframeColor: {r: 1, g: 1, b: 1, a: 0.1}
   MirrorX: 0
+--- !u!1 &7623786769734921104
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7004837789833485841}
+  - component: {fileID: 5476753680664668047}
+  - component: {fileID: 5387434249835506935}
+  m_Layer: 2
+  m_Name: VehicleArea
+  m_TagString: Interactable
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7004837789833485841
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7623786769734921104}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.871, y: 0.535, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1917782512971055122}
+  m_RootOrder: 11
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &5476753680664668047
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7623786769734921104}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &5387434249835506935
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7623786769734921104}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d249b4cc7322e94183e92bc94d426c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  EnterExitVehicle:
+    MaxVehicleSpeedToEnter: 3
+    MaxCharacterSpeedToEnter: 10
 --- !u!1 &7986775886428368995
 GameObject:
   m_ObjectHideFlags: 0

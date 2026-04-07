@@ -7,7 +7,7 @@ namespace JUTPS.VehicleSystem
     /// Ju motorcycle vehicle controller.
     /// </summary>
     [AddComponentMenu("JU TPS/Vehicle System/Motorcycle Controller")]
-    public class MotorcycleController : Vehicle
+    public class MotorcycleController : JUWheeledVehicle
     {
         /// <summary>
         /// Stores vehicle <see cref="WheelCollider"/> and wheel behavior.
@@ -124,7 +124,7 @@ namespace JUTPS.VehicleSystem
         public float CurrentInclination { get; private set; }
 
         /// <summary>
-        /// Return true if the <seealso cref="Vehicle.IsGrounded"/> is true and the ground collider surface have a tag <seealso cref="LoopTag"/>. <para/>
+        /// Return true if the <seealso cref="JUVehicle.IsGrounded"/> is true and the ground collider surface have a tag <seealso cref="LoopTag"/>. <para/>
         /// When is looping, he vehicle will align the normal with the ground direction.
         /// </summary>
         public bool IsLooping { get; private set; }
@@ -132,7 +132,7 @@ namespace JUTPS.VehicleSystem
         /// <summary>
         /// Create a <see cref="MotorcycleController"/> gameObject component instance.
         /// </summary>
-        public MotorcycleController()
+        public MotorcycleController() : base()
         {
             FrontWheel = new Wheel
             {
@@ -164,6 +164,10 @@ namespace JUTPS.VehicleSystem
 
             LoopTag = "Loop";
             AlignWithLoopSpeed = 8;
+
+            // (0, 0, 0) is not recommended for motorcycles because it's makes more hard to
+            // stabilized if stoped.
+            Engine.CenterOfMass = Vector3.up * 0.1f;
         }
 
         /// <inheritdoc/>
@@ -191,14 +195,6 @@ namespace JUTPS.VehicleSystem
 
             if (!IsOn)
                 return;
-
-            // Set default inputs
-            if (UseDefaultInputs)
-            {
-                Steer = JUInput.GetAxis(JUInput.Axis.MoveHorizontal);
-                Throttle = JUInput.GetAxis(JUInput.Axis.MoveVertical);
-                Brake = JUInput.GetButton(JUInput.Buttons.JumpButton) ? 1 : 0;
-            }
 
             // Anti Overturn
             OverturnCheck.OverturnCheck(transform);
@@ -268,11 +264,12 @@ namespace JUTPS.VehicleSystem
                 return;
 
             // Inclination Calculation
-            if (Mathf.Abs(ForwardSpeed) > 1) CurrentInclination = Steer * Mathf.Abs(ForwardSpeed) * Inclination.Sensitive;
+            if (Mathf.Abs(ForwardSpeed) > 1) CurrentInclination = Horizontal * Mathf.Abs(ForwardSpeed) * Inclination.Sensitive;
             else CurrentInclination = Mathf.Lerp(CurrentInclination, Inclination.StopedInclination, Time.deltaTime);
             CurrentInclination = Mathf.Clamp(CurrentInclination, -Inclination.MaxAngle, Inclination.MaxAngle);
 
-            float inclinationSpeed = Mathf.Clamp01(Inclination.Speed * DrivePadSmooth.RiseRateSteer * CurrentSteerVsSpeed * Time.deltaTime);
+            //float inclinationSpeed = Mathf.Clamp01(Inclination.Speed * DrivePadSmooth.RiseRateSteer * CurrentSteerVsSpeed * Time.deltaTime);
+            float inclinationSpeed = Mathf.Clamp01(Inclination.Speed * Time.deltaTime);
 
             // Vehicle rotation.
             Quaternion pivotTargetRotation = Quaternion.FromToRotation(_rotationPivotParent.up, groundAligment) * _rotationPivotParent.rotation;
@@ -284,15 +281,15 @@ namespace JUTPS.VehicleSystem
             // Apply the inclination.
             transform.rotation = Quaternion.Lerp(transform.rotation, _rotationPivotChild.rotation, inclinationSpeed);
 
-            //Freeze rigidbody rotation.
+            // Freeze rigidbody rotation.
             if (IsGrounded)
             {
-                RigidBody.angularDamping = Inclination.OnGroundDrag;
+                RigidBody.angularDrag = Inclination.OnGroundDrag;
                 RigidBody.constraints = RigidbodyConstraints.FreezeRotationZ;
             }
             else
             {
-                RigidBody.angularDamping = Inclination.OffGroundDrag;
+                RigidBody.angularDrag = Inclination.OffGroundDrag;
                 RigidBody.constraints = RigidbodyConstraints.None;
             }
         }

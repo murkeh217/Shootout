@@ -10,14 +10,14 @@ namespace JUTPS.ActionScripts
     public class FallDamage : JUTPSActions.JUTPSAction
     {
         [Header("Fall Damage")]
-        [Range(0, 10)]
+        [Range(0, 400)]
         public float Damage = 10;
         public float HeightToGetDamage = 4;
         [Header("Landing Roll")]
         public bool RollWhenLand;
         public float HeightToMakeCharacterRoll = 2;
         public bool CameraShake = true;
-        [Range(0, 5)]
+        [Range(0, 20)]
         public float CameraShakeIntensity = 3;
 
         [Header("Events")]
@@ -29,12 +29,12 @@ namespace JUTPS.ActionScripts
         void Update()
         {
             //Falling ground strenght
-            if (TPSCharacter.IsGrounded == false && TPSCharacter.CanJump == false)
+            if (TPSCharacter.IsGrounded == false)
             {
                 //Falling
                 Falling();
 
-                float LocalUpSpeed = transform.InverseTransformDirection(rb.linearVelocity).y;
+                float LocalUpSpeed = transform.InverseTransformDirection(rb.velocity).y;
 
                 if (LocalUpSpeed > 0)
                 {
@@ -42,7 +42,7 @@ namespace JUTPS.ActionScripts
                 }
                 else
                 {
-                    FallDamageIntensity = -LocalUpSpeed / 5;
+                    FallDamageIntensity = -LocalUpSpeed / 4;
                 }
 
                 //Update Falling Animation
@@ -66,7 +66,7 @@ namespace JUTPS.ActionScripts
                     //Damage
                     if (FallDamageIntensity > HeightToGetDamage)
                     {
-                        TPSCharacter.TakeDamage(FallDamageIntensity * Damage);
+                        TPSCharacter.TakeDamage(FallDamageIntensity/4 * Damage);
                     }
                     FallDamageIntensity = 0;
                     Landed();

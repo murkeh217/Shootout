@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
 using UnityEditor;
 
+// This window does not work correctly on linux, idk why.
+#if !UNITY_EDITOR_LINUX
+
 namespace JUTPS.CustomEditors
 {
     [InitializeOnLoad]
@@ -162,3 +165,5 @@ namespace JUTPS.CustomEditors
         }
     }
 }
+
+#endif

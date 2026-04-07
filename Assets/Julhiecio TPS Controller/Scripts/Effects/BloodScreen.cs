@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using JU;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,39 +8,71 @@ namespace JUTPS.FX
     [RequireComponent(typeof(Image))]
     public class BloodScreen : MonoBehaviour
     {
-        public static BloodScreen instance;
-        JUTPS.CharacterBrain.JUCharacterBrain pl;
-        Image img;
-        float healthvalue;
-        Color currentColor;
-        void Start()
+        private static BloodScreen _instance;
+
+        public static BloodScreen Instance;
+        private IHealth _playerHealth;
+        private Image img;
+        private float healthvalue;
+        private Color currentColor;
+
+        private void Start()
         {
+            Debug.Assert(_instance == null || _instance == this, $"{nameof(BloodScreen)}: ({name}) Multiple instances are not allowed.");
+
             var player = GameObject.FindGameObjectWithTag("Player");
-            pl = (player != null) ? player.GetComponent<JUTPS.CharacterBrain.JUCharacterBrain>() : null;
+            _playerHealth = JUGameManager.PlayerController.GetComponent<IHealth>();
             img = GetComponent<Image>();
-            instance = this;
+            Instance = this;
+
+#if UNITY_6000_3_OR_NEWER
+            IHealth.OnAnyDamaged += OnHealthDamaged;
+#endif
         }
 
-        // Update is called once per frame
-        void Update()
+        private void OnDestroy()
         {
-            if (pl == null) return;
-            if (pl.CharacterHealth != null)
-            {
-                healthvalue = Mathf.Lerp(healthvalue, pl.CharacterHealth.Health / pl.CharacterHealth.MaxHealth, 15 * Time.deltaTime);
-                currentColor = Color.Lerp(Color.white, Color.clear, healthvalue);
-                img.color = Color.Lerp(img.color, currentColor, 5 * Time.deltaTime);
-            }
+#if UNITY_6000_3_OR_NEWER
+            IHealth.OnAnyDamaged -= OnHealthDamaged;
+#endif
         }
+
+        private void Update()
+        {
+            if (_playerHealth == null)
+            {
+                return;
+            }
+
+            healthvalue = Mathf.Lerp(healthvalue, _playerHealth.NormalizedHealth, 15 * Time.deltaTime);
+            currentColor = Color.Lerp(Color.white, Color.clear, healthvalue);
+            img.color = Color.Lerp(img.color, currentColor, 5 * Time.deltaTime);
+        }
+
         private void PlayerHasHited()
         {
             img.color = Color.white;
         }
-        public static void PlayerTakingDamaged()
-        {
-            if (instance == null) { return; }
 
-            instance.PlayerHasHited();
+        public static void Show()
+        {
+            if (Instance == null)
+            {
+                return;
+            }
+
+            Instance.PlayerHasHited();
         }
+
+#if UNITY_6000_3_OR_NEWER
+        private void OnHealthDamaged(IHealth.DamageResultInfo info)
+        {
+            if (info.DamagedObject is MonoBehaviour script && script.gameObject == JUGameManager.PlayerController.gameObject)
+            {
+                _playerHealth = info.DamagedObject;
+                PlayerHasHited();
+            }
+        }
+#endif
     }
 }

@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 3195200035291602774}
   - component: {fileID: 4952640030114786735}
   - component: {fileID: 4952640030114786736}
+  - component: {fileID: 612426485349833725}
   m_Layer: 14
   m_Name: Granade
   m_TagString: Untagged
@@ -31,7 +32,8 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
+  m_Children:
+  - {fileID: 1117545211406402512}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -98,22 +100,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ItemFilterTag: General
   ItemIcon: {fileID: 21300000, guid: e6add6efd4473964fa4f64e85f1fa86f, type: 3}
-  Unlocked: 1
-  ItemQuantity: 1
+  Unlocked: 0
+  ItemQuantity: 0
   MaxItemQuantity: 3
   ItemName: Granade
   ItemSwitchID: 0
-  Owner: {fileID: 0}
-  TPSOwner: {fileID: 0}
-  WeaponRotationCenter: {fileID: 0}
-  CamPivot: {fileID: 0}
+  CanUseItem: 1
   SingleUseItem: 0
   ContinuousUseItem: 0
   BlockFireMode: 0
   ItemModelInBody: {fileID: 0}
   TimeToUse: 0
-  CurrentTimeToUse: 0
-  CanUseItem: 1
   IsUsingItem: 0
   ItemWieldPositionID: 0
   IsLeftHandItem: 0
@@ -122,6 +119,7 @@ MonoBehaviour:
   HoldPose: 3
   PushItemFrom: 0
   OppositeHandPosition: {fileID: 0}
+  ActiveOnThrow: {fileID: 8155855041585198122}
   AnimationTriggerParameterName: Throw
   ThrowForce: 10
   ThrowUpForce: 5
@@ -129,7 +127,6 @@ MonoBehaviour:
   SecondsToDestroy: 5
   PositionToThrow: {x: 0, y: 1, z: 0.8}
   DirectionToThrow: {x: 0, y: 0, z: 1}
-  IsThrowed: 0
   ExplosionPrefab: {fileID: 3555473432261732657, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
     type: 3}
   TimeToExplode: 2
@@ -164,3 +161,77 @@ CapsuleCollider:
   m_Height: 0.14
   m_Direction: 1
   m_Center: {x: 0, y: 0.03, z: 0}
+--- !u!114 &612426485349833725
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4377956503516340196}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c14ab3534fe39f41b6ddb054f8b72de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SoundDistance: 7
+  SoundTag: {fileID: 0}
+  PlayOnSpawn: 0
+  PlayOnDestroy: 0
+  PlayOnEnable: 0
+  PlayOnDisable: 0
+  RepeatRate: 0
+  MinRepeatTime: 0.3
+  PlayOnTriggerEnter: 0
+  PlayOnTriggerExit: 0
+  PlayOnCollisionEnter: 1
+  PlayOnCollisionExit: 0
+  IgnoreCollisionTags: []
+  SfxSource: {fileID: 0}
+  SfxLifeTime: 10
+--- !u!1 &8155855041585198122
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1117545211406402512}
+  - component: {fileID: 3994468478627842813}
+  m_Layer: 14
+  m_Name: Escape Area
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &1117545211406402512
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8155855041585198122}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 4002134991248262494}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3994468478627842813
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8155855041585198122}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6d6c1d07e9012f4b91d6bc89d4954cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  PositionThreshold: 2
+  ScaleThreshold: 1
+  AreaTag: {fileID: 11400000, guid: fc530c8e06d815c4aa780fff06904951, type: 2}
+  Size: 20

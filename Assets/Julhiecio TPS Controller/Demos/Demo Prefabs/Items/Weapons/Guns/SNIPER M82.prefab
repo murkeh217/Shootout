@@ -96,6 +96,7 @@ GameObject:
   - component: {fileID: 6467831754146836544}
   - component: {fileID: -7963561596682162276}
   - component: {fileID: 5191370703399811685}
+  - component: {fileID: 7596955544943687455}
   m_Layer: 14
   m_Name: SNIPER M82
   m_TagString: Untagged
@@ -238,6 +239,7 @@ MonoBehaviour:
   MaxItemQuantity: 1
   ItemName: M82
   ItemSwitchID: 0
+  CanUseItem: 1
   Owner: {fileID: 0}
   TPSOwner: {fileID: 0}
   WeaponRotationCenter: {fileID: 0}
@@ -248,7 +250,6 @@ MonoBehaviour:
   ItemModelInBody: {fileID: 0}
   TimeToUse: 0
   CurrentTimeToUse: 0
-  CanUseItem: 1
   IsUsingItem: 0
   ItemWieldPositionID: 1
   IsLeftHandItem: 0
@@ -303,6 +304,9 @@ MonoBehaviour:
   ReloadAudio: {fileID: 8300000, guid: 17534bbf483d6194e802ccd8f011b494, type: 3}
   EmptyMagazineAudio: {fileID: 8300000, guid: be916288d58d41c449a94afa1c16b3dd, type: 3}
   WeaponEquipAudio: {fileID: 8300000, guid: b77e860d6e13ce24fbcd3ce025a40025, type: 3}
+  OnShot:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!65 &626888908296150715
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -369,7 +373,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2dd2ca464ee8eb24194599ee8dfd276b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AudioTag: {fileID: 11400000, guid: b7f60ffc055fd01479c79dd9351b4dff, type: 2}
   AudioSource: {fileID: 936895243106531278}
+--- !u!114 &7596955544943687455
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2930857990971156363}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dec4c0aa2dbee55438193f1f61633e31, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MaxSoundDistance: 20
+  SoundTag: {fileID: 0}
 --- !u!1 &5496563023706699315
 GameObject:
   m_ObjectHideFlags: 0

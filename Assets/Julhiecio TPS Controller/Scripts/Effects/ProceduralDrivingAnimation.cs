@@ -19,7 +19,7 @@ namespace JUTPS.FX
         public LayerMask GroundLayer;
         [Header("Spine Lean")]
         [SerializeField] private bool SpineLean = true;
-        [Range(0, 1)]
+        [Range(-1, 1)]
         [SerializeField] private float LeanDirection = 0.2f;
         [SerializeField] private BodyLeanInert.Axis ForwardLeanAxis = BodyLeanInert.Axis.X;
         [SerializeField] private BodyLeanInert.Axis SidesLeanAxis = BodyLeanInert.Axis.Z;
@@ -52,7 +52,7 @@ namespace JUTPS.FX
             DoProceduralDrivingAnimation(DriveAbility.CurrentVehicle, DriveAbility.CurrentVehicleCharacterIK);
         }
 
-        protected virtual void DoProceduralDrivingAnimation(Vehicle vehicle, JUVehicleCharacterIK vehicleCharacterIK)
+        protected virtual void DoProceduralDrivingAnimation(JUVehicle vehicle, JUVehicleCharacterIK vehicleCharacterIK)
         {
             if (!vehicle || !vehicleCharacterIK || TPSCharacter.IsRagdolled)
                 return;
@@ -73,8 +73,8 @@ namespace JUTPS.FX
                 vehicleCharacterIK.InverseKinematicTargetPositions.RightFootPositionIK)
             {
                 //Set procedural hint movements values
-                float leftHint = 6 * Mathf.Clamp(vehicle.FinalSteer, -1, 0) * vehicleSpeed / 20;
-                float rightHint = 6 * Mathf.Clamp(vehicle.FinalSteer, 0, 1) * vehicleSpeed / 20;
+                float leftHint = 6 * Mathf.Clamp(vehicle.FinalHorizontal, -1, 0) * vehicleSpeed / 20;
+                float rightHint = 6 * Mathf.Clamp(vehicle.FinalHorizontal, 0, 1) * vehicleSpeed / 20;
 
                 //Create procedural hint movement
                 float HintSpace = 3 * vehicleCharacterIK.AnimationWeights.HintMovementWeight;
@@ -121,8 +121,8 @@ namespace JUTPS.FX
             if (!SpineLean) return;
 
             //Get Lean Values
-            float SidewayLeanWeight = -vehicle.FinalSteer * (vehicleSpeed / 5);
-            float ForwardLeanWeight = vehicle.FinalThrottle * (vehicleSpeed / 4f);
+            float SidewayLeanWeight = -vehicle.FinalHorizontal * (vehicleSpeed / 5);
+            float ForwardLeanWeight = vehicle.FinalVertical * (vehicleSpeed / 4f);
 
             Vector3 ForwardAxis = new Vector3(0, 0, 0);
             switch (ForwardLeanAxis)
@@ -158,13 +158,13 @@ namespace JUTPS.FX
             anim.SpineInclination(Vector3.Lerp(Vector3.up, SideAxis, LeanDirection), SidewayLeanWeight, vehicleCharacterIK.AnimationWeights.SideLeanWeight);
         }
 
-        private void HeadLookAtAnimation(Vehicle vehicle, JUVehicleCharacterIK vehicleCharacterIK)
+        private void HeadLookAtAnimation(JUVehicle vehicle, JUVehicleCharacterIK vehicleCharacterIK)
         {
             if (!vehicle || !vehicleCharacterIK)
                 return;
 
             // Head look at move direction
-            Vector3 LookVehicleDirection = transform.position + vehicle.transform.forward * 10 + vehicle.transform.up * 0.6f + vehicle.transform.right * vehicle.FinalSteer * 8;
+            Vector3 LookVehicleDirection = transform.position + vehicle.transform.forward * 10 + vehicle.transform.up * 0.6f + vehicle.transform.right * vehicle.FinalHorizontal * 8;
             anim.NormalLookAt(LookVehicleDirection, vehicleCharacterIK.AnimationWeights.LookAtDirectionWeight, 0, 1);
         }
     }

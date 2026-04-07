@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using JU;
 using UnityEngine;
 
 namespace JUTPS.ArmorSystem
@@ -7,30 +8,32 @@ namespace JUTPS.ArmorSystem
     [AddComponentMenu("JU TPS/Armor System/Damageable Body Part")]
     public class DamageableBodyPart : MonoBehaviour
     {
-        public JUHealth Health;
         public float DamageMultiplier = 1;
-        [HideInInspector] public Armor ArmorProtecting;
+        public Armor ArmorProtecting;
+
+        public IHealth Health { get; private set; }
+
         private void Start()
         {
-            if (Health == null)
-            {
-                Health = GetComponentInParent<JUHealth>();
-            }
+            Health = GetComponentInParent<IHealth>();
         }
-        public float DoDamage(float Damage)
+        public float DoDamage(IHealth.DamageInfo damageInfo)
         {
             if (Health == null)
             {
                 Debug.LogWarning("Could not do damage as the Health variable is null");
                 return 0;
             }
-            Health.DoDamage(DamageMultiplier * Damage);
-            if (ArmorProtecting != null)
+
+            damageInfo.Damage *= DamageMultiplier;
+
+            Health.DoDamage(damageInfo);
+            if (ArmorProtecting != null && ArmorProtecting.enabled)
             {
-                ArmorProtecting.DoDamageOnArmor(Damage);
+                ArmorProtecting.DoDamageOnArmor(damageInfo.Damage);
             }
 
-            return DamageMultiplier * Damage;
+            return damageInfo.Damage;
         }
     }
 

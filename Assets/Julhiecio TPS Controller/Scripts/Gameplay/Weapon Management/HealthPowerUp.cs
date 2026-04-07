@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using JUTPS;
+using JU;
 
 namespace JUTPS.PowerUps
 {
@@ -16,12 +17,16 @@ namespace JUTPS.PowerUps
         {
             if (other.gameObject.tag == "Player")
             {
-                var juHealth = other.GetComponent<JUHealth>();
-                if (juHealth != null)
+                var health = other.GetComponent<IHealth>();
+                if (health != null)
                 {
-                    if (juHealth.Health == juHealth.MaxHealth) return;
+                    if (health.Health == health.MaxHealth) return;
 
-                    juHealth.Health += HealthToAdd;
+                    health.AddHealth(new IHealth.AddedHealthInfo()
+                    {
+                        HealthAdded = HealthToAdd,
+                        Source = this
+                    });
 
                     GameObject fx = Instantiate(Effect, transform.position, transform.rotation);
                     Destroy(fx, 5);

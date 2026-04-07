@@ -18,7 +18,7 @@ namespace JUTPS.AI
 
         public enum OnEndPathAction { Stop, ReversePath, RestartPath }
 
-        void Start()
+        void Awake()
         {
             RefreshWaypoints();
             if (ReverseOnStart)

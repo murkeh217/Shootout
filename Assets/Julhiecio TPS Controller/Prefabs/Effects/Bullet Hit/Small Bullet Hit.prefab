@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 888265343162679146}
   - component: {fileID: 5702880273033443060}
   - component: {fileID: 3584947863651547435}
+  - component: {fileID: 319443938823512807}
   m_Layer: 0
   m_Name: Small Bullet Hit
   m_TagString: Untagged
@@ -4819,6 +4820,29 @@ ParticleSystemRenderer:
   m_Mesh2: {fileID: 0}
   m_Mesh3: {fileID: 0}
   m_MaskInteraction: 0
+--- !u!114 &319443938823512807
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3377176041485713299}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c14ab3534fe39f41b6ddb054f8b72de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SoundDistance: 5
+  PlayOnSpawn: 1
+  PlayOnDestroy: 0
+  PlayOnEnable: 0
+  PlayOnDisable: 0
+  RepeatRate: 0
+  PlayOnTriggerEnter: 0
+  PlayOnTriggerExit: 0
+  PlayOnCollisionEnter: 0
+  PlayOnCollisionExit: 0
+  IgnoreCollisionTags: []
 --- !u!1 &3989921293967786177
 GameObject:
   m_ObjectHideFlags: 0

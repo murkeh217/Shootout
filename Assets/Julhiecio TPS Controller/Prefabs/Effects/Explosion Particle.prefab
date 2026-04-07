@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 3555473432261732662}
   - component: {fileID: 7724353753607567960}
   - component: {fileID: -2928661748503362081}
+  - component: {fileID: 2070852953108886234}
   m_Layer: 0
   m_Name: Explosion Particle
   m_TagString: DeadZone
@@ -4844,6 +4845,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 769
   Damage: 300
+  OnExplode:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &-2928661748503362081
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4865,6 +4869,32 @@ MonoBehaviour:
   MaxAngle: 0.9
   ShakeDuration: 0.5
   ShakeRadious: 50
+--- !u!114 &2070852953108886234
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3555473432261732657}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c14ab3534fe39f41b6ddb054f8b72de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SoundDistance: 40
+  PlayOnSpawn: 1
+  PlayOnDestroy: 0
+  PlayOnEnable: 0
+  PlayOnDisable: 0
+  RepeatRate: 0
+  MinRepeatTime: 1
+  PlayOnTriggerEnter: 0
+  PlayOnTriggerExit: 0
+  PlayOnCollisionEnter: 0
+  PlayOnCollisionExit: 0
+  IgnoreCollisionTags: []
+  SfxSource: {fileID: 0}
+  SfxLifeTime: 10
 --- !u!1 &3555473432771182389
 GameObject:
   m_ObjectHideFlags: 0

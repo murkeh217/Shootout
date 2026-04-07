@@ -29,7 +29,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 3524521473361757363}
-  m_RootOrder: 10
+  m_RootOrder: 9
   m_LocalEulerAnglesHint: {x: -29.231, y: 0, z: 0}
 --- !u!114 &1078049736
 MonoBehaviour:
@@ -176,7 +176,7 @@ Transform:
   m_LocalScale: {x: -1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 3524521473361757363}
-  m_RootOrder: 11
+  m_RootOrder: 10
   m_LocalEulerAnglesHint: {x: -29.231, y: 0, z: 0}
 --- !u!114 &2010720737
 MonoBehaviour:
@@ -809,7 +809,7 @@ GameObject:
   - component: {fileID: 3635692345721802003}
   m_Layer: 8
   m_Name: Car
-  m_TagString: Untagged
+  m_TagString: Vehicle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -834,7 +834,6 @@ Transform:
   - {fileID: 6453658016074847306}
   - {fileID: 6453658015932425876}
   - {fileID: 7521924749978023298}
-  - {fileID: 3555473432022443516}
   - {fileID: 1078049735}
   - {fileID: 2010720736}
   m_Father: {fileID: 0}
@@ -881,7 +880,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58c61ca88a8fac419690bcaa49ec557, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  UseDefaultInputs: 1
+  IsOn: 0
+  ControlsEnabled: 1
+  UsePlayerInputs: 1
+  PlayerInputs: {fileID: 11400000, guid: be455aa438e8dc04899a8578b3ce7ef1, type: 2}
   Engine:
     MaxForwardSpeed: 40
     MaxRearSpeed: 25
@@ -954,8 +956,6 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   RotateToUpInAirSpeed: 1
-  IsOn: 0
-  ControlsEnabled: 1
   _wheelAxles:
   - ThrottleInfluence: 1
     BrakeInfluence: 1
@@ -1005,38 +1005,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa2549d042f8b6d41bb6289069865f19, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Health: 1000
-  MaxHealth: 1000
-  BloodScreenEffect: 0
-  BloodHitParticle: {fileID: 0}
-  OnDeath:
+  _protection: 5
+  _health: 100
+  _maxHealth: 100
+  _isInvencible: 0
+  _healthRegeneration:
+    Delay: 0
+    Speed: 0
+  _bloodScreenEffect: 0
+  _spawnOnHit: {fileID: 0}
+  _spawnOnDamage: {fileID: 0}
+  _spawnOnDie: {fileID: 3555473432261732657, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
+    type: 3}
+  _onDeath:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 3555473432022443513}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
-      - m_Target: {fileID: 6453658015158800910}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: set_enabled
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  IsDead: 0
+      m_Calls: []
+  _onDamage:
+    m_PersistentCalls:
+      m_Calls: []
+  _onHealthAdded:
+    m_PersistentCalls:
+      m_Calls: []
+  _onResetHealth:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &4066346495351844525
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1266,7 +1258,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57b76bb4d21f5654aae48bafd91b9a5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CharactersCanGetVehicle: 1
   CharacterExitingPosition: {x: -2, y: 0.5, z: 0}
   InverseKinematicTargetPositions:
     CharacterPosition: {fileID: 6453658016074847306}
@@ -1387,9 +1378,10 @@ GameObject:
   m_Component:
   - component: {fileID: 7521924749978023298}
   - component: {fileID: 5848712687744968094}
+  - component: {fileID: 6109305280425465878}
   m_Layer: 2
   m_Name: VehicleArea
-  m_TagString: VehicleArea
+  m_TagString: Interactable
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1421,6 +1413,22 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &6109305280425465878
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4693805947418828840}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d249b4cc7322e94183e92bc94d426c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  InteractionEnabled: 1
+  EnterExitVehicle:
+    MaxVehicleSpeedToEnter: 3
+    MaxCharacterSpeedToEnter: 10
 --- !u!1 &4945641550833628354
 GameObject:
   m_ObjectHideFlags: 0
@@ -2596,104 +2604,3 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!1001 &373673160
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    m_TransformParent: {fileID: 3524521473361757363}
-    m_Modifications:
-    - target: {fileID: 3555473432261732657, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: m_Name
-      value: Explosion Particle
-      objectReference: {fileID: 0}
-    - target: {fileID: 3555473432261732657, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3555473432261732660, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: m_RootOrder
-      value: 9
-      objectReference: {fileID: 0}
-    - target: {fileID: 3555473432261732660, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0.076
-      objectReference: {fileID: 0}
-    - target: {fileID: 3555473432261732660, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0.68
-      objectReference: {fileID: 0}
-    - target: {fileID: 3555473432261732660, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 1.48
-      objectReference: {fileID: 0}
-    - target: {fileID: 3555473432261732660, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 0.7071068
-      objectReference: {fileID: 0}
-    - target: {fileID: 3555473432261732660, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0.7071068
-      objectReference: {fileID: 0}
-    - target: {fileID: 3555473432261732660, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3555473432261732660, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3555473432261732660, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: -90
-      objectReference: {fileID: 0}
-    - target: {fileID: 3555473432261732660, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3555473432261732660, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7724353753607567960, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: Damage
-      value: 500
-      objectReference: {fileID: 0}
-    - target: {fileID: 7724353753607567960, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: ExplosionForce
-      value: 60
-      objectReference: {fileID: 0}
-    - target: {fileID: 7724353753607567960, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-        type: 3}
-      propertyPath: ExplosionUpForce
-      value: 2
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a, type: 3}
---- !u!1 &3555473432022443513 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3555473432261732657, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-    type: 3}
-  m_PrefabInstance: {fileID: 373673160}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &3555473432022443516 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 3555473432261732660, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a,
-    type: 3}
-  m_PrefabInstance: {fileID: 373673160}
-  m_PrefabAsset: {fileID: 0}
