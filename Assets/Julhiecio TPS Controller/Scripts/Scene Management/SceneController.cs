@@ -127,7 +127,7 @@ namespace JUTPS
             {
                 rigidbody.useGravity = true;
                 rigidbody.isKinematic = false;
-                rigidbody.velocity = transform.up * PlayerController.GetComponent<Rigidbody>().velocity.y;
+                rigidbody.linearVelocity = transform.up * PlayerController.GetComponent<Rigidbody>().linearVelocity.y;
                 rigidbody.constraints = RigidbodyConstraints.None | RigidbodyConstraints.FreezeRotation;
             }
 
