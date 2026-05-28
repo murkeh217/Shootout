@@ -51,8 +51,8 @@ public class DungeonGenerator : MonoBehaviour {
 
 	public bool hasRoof = false;
 	public float playerSpawnPosY = 1;
-	public float playerSpawnPosX = 1;
-	public float playerSpawnPosZ = 1;
+	public float playerSpawnPosX = 0;
+	public float playerSpawnPosZ = 0;
 
 	public float sizeOfFloat = 4;
 	public int sizeOfInt = 4;
