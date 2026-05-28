@@ -290,10 +290,13 @@ MonoBehaviour:
   environmentToWall: []
   enemies:
   - {fileID: 1073173773427798362, guid: 7358efb16e8239640b6c6199d3a4a502, type: 3}
-  lamps: []
-  columns: []
+  lamps:
+  - {fileID: 1831913941252799307, guid: 4abd4aa254f088841ab35cb2cc04e68e, type: 3}
+  columns:
+  - {fileID: 1949562116818588, guid: 4533eb7e49bd8624ca88dfc1c9cef998, type: 3}
   furniture: []
-  roofs: []
+  roofs:
+  - {fileID: 1270879658800896, guid: c21252cbe01eccd4a967b728d0b09f5a, type: 3}
   player: {fileID: 731319785}
   transformY: 0
   groundTransZ: 0
@@ -506,11 +509,6 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 969879555309924604, guid: 9ce03ed22613ec94794c2173f187f0bf,
-        type: 3}
-      propertyPath: m_AnchorMin.x
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 1192753210276860089, guid: 9ce03ed22613ec94794c2173f187f0bf,
         type: 3}
       propertyPath: m_AnchorMax.x
@@ -525,11 +523,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchorMin.y
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1245077898203681856, guid: 9ce03ed22613ec94794c2173f187f0bf,
-        type: 3}
-      propertyPath: _simulateMobileDevice
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3999820222012333457, guid: 9ce03ed22613ec94794c2173f187f0bf,
         type: 3}
@@ -564,16 +557,6 @@ PrefabInstance:
     - target: {fileID: 7338691577819021697, guid: 9ce03ed22613ec94794c2173f187f0bf,
         type: 3}
       propertyPath: m_Size
-      value: 0.50000006
-      objectReference: {fileID: 0}
-    - target: {fileID: 7442157323830518602, guid: 9ce03ed22613ec94794c2173f187f0bf,
-        type: 3}
-      propertyPath: m_Size
-      value: 0.99999994
-      objectReference: {fileID: 0}
-    - target: {fileID: 7442157323830518602, guid: 9ce03ed22613ec94794c2173f187f0bf,
-        type: 3}
-      propertyPath: m_Value
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7865852345351792484, guid: 9ce03ed22613ec94794c2173f187f0bf,
@@ -694,7 +677,7 @@ PrefabInstance:
     - target: {fileID: 8325505125749106588, guid: 9ce03ed22613ec94794c2173f187f0bf,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 393.77423
+      value: 393.77454
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -910,6 +893,8 @@ MonoBehaviour:
   runData: {fileID: 11400000, guid: 602085dabee2f9547b8d3c1211f35410, type: 2}
   doorPrefab: {fileID: 7995742308697179743, guid: 9d0e675939ecde647ace716cd3f84068,
     type: 3}
+  doorEveryNTunnelTiles: 12
+  maxDoorsPerFloor: 40
   enemyPrefabs:
   - {fileID: 1073173773427798362, guid: 7358efb16e8239640b6c6199d3a4a502, type: 3}
   hpPerFloor: 0.15

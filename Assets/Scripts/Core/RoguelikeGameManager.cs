@@ -2,6 +2,7 @@ using System.Collections;
 using Unity.AI.Navigation;
 using UnityEngine;
 using UnityEngine.AI;
+using JUTPS;
 
 public class RoguelikeGameManager : MonoBehaviour
 {
@@ -69,7 +70,39 @@ public class RoguelikeGameManager : MonoBehaviour
 
     private void Start()
     {
+        EnsurePlayerReady();
         StartNewRun();
+    }
+
+    private void EnsurePlayerReady()
+    {
+        // Cursor lock helps JU TPS input + camera behave as expected.
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        if (juTPSPlayer != null && juTPSPlayer.CompareTag("Player") == false)
+        {
+            // Needed for RoomTrigger/ExitTrigger detection.
+            juTPSPlayer.tag = "Player";
+        }
+
+        // Make sure JU TPS inputs/movement aren't accidentally disabled on start.
+        if (juTPSPlayer != null)
+        {
+            JUCharacterController controller = juTPSPlayer.GetComponentInChildren<JUCharacterController>();
+            if (controller != null)
+            {
+                controller.DisableAllMove = false;
+                controller.CanMove = true;
+
+                if (controller.Inputs != null)
+                    controller.Inputs.SetActiveInputs(true);
+
+                // Avoid starting in aiming zoom state.
+                controller.IsAiming = false;
+                controller.FiringMode = false;
+            }
+        }
     }
 
     // -------------------------------------------------------

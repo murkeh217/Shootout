@@ -62,7 +62,12 @@ public class DungeonGenerator : MonoBehaviour {
 		{
 			for (int i = 0; i < objectsToCleanDungeon.Count; i++)
 			{
-				DestroyImmediate(objectsToCleanDungeon[i]);
+				// DestroyImmediate is extremely slow in Play Mode and can stall frames hard.
+				// Use Destroy during runtime, keep DestroyImmediate only for editor-time cleanup.
+				if (Application.isPlaying)
+					Destroy(objectsToCleanDungeon[i]);
+				else
+					DestroyImmediate(objectsToCleanDungeon[i]);
 			}
 
 			generatedDungeonNumber = 0;

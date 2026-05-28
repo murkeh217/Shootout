@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public class PerkChoiceUI : MonoBehaviour
 {
@@ -30,6 +31,7 @@ public class PerkChoiceUI : MonoBehaviour
     {
         if (choices == null || choices.Length == 0) return;
         EnsureBuilt();
+        EnsureEventSystem();
 
         this.onChosen = onChosen;
         currentChoices = choices;
@@ -50,7 +52,6 @@ public class PerkChoiceUI : MonoBehaviour
             buttons[i].onClick.AddListener(() => Choose(idx));
         }
 
-        Time.timeScale = 0f;
         canvas.gameObject.SetActive(true);
     }
 
@@ -58,7 +59,6 @@ public class PerkChoiceUI : MonoBehaviour
     {
         if (canvas != null)
             canvas.gameObject.SetActive(false);
-        Time.timeScale = 1f;
     }
 
     private void Choose(int index)
@@ -67,6 +67,15 @@ public class PerkChoiceUI : MonoBehaviour
         var chosen = currentChoices[index];
         Close();
         onChosen?.Invoke(chosen);
+    }
+
+    private void Update()
+    {
+        if (!IsOpen) return;
+
+        if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1)) Choose(0);
+        if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2)) Choose(1);
+        if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3)) Choose(2);
     }
 
     private void EnsureBuilt()
@@ -147,6 +156,15 @@ public class PerkChoiceUI : MonoBehaviour
         }
 
         canvas.gameObject.SetActive(false);
+    }
+
+    private static void EnsureEventSystem()
+    {
+        if (FindObjectOfType<EventSystem>() != null) return;
+
+        GameObject es = new GameObject("EventSystem");
+        es.AddComponent<EventSystem>();
+        es.AddComponent<StandaloneInputModule>();
     }
 
     private static string FormatPerk(PerkDefinition perk)

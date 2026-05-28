@@ -11,6 +11,11 @@ public class RoomSpawner : MonoBehaviour
     [Tooltip("A cube or flat mesh with DoorController + Collider")]
     public GameObject doorPrefab;
 
+    [Header("Door placement (performance)")]
+    [Tooltip("Places fewer doors to reduce instantiated objects.")]
+    public int doorEveryNTunnelTiles = 12;
+    public int maxDoorsPerFloor = 40;
+
     [Header("Enemy prefabs ù override dungeon generator's own spawning")]
     public GameObject[] enemyPrefabs;
 
@@ -74,12 +79,15 @@ public class RoomSpawner : MonoBehaviour
 
         if (corridorTiles == null || corridorTiles.Count == 0) return;
 
-        // Find the first and last tile in each corridor run
-        // and place a door at those positions
-        // Simple approach: place a door at every 3rd corridor tile
-        // to act as a blocker without over-crowding narrow passages
-        for (int i = 0; i < corridorTiles.Count; i += 3)
+        int step = Mathf.Max(3, doorEveryNTunnelTiles);
+        int spawned = 0;
+
+        // Simple approach: place a door periodically in corridors.
+        // Keep the count capped to avoid too many colliders/objects.
+        for (int i = 0; i < corridorTiles.Count; i += step)
         {
+            if (spawned >= maxDoorsPerFloor) break;
+
             Vector3 pos = corridorTiles[i];
             pos.y = dungeonGenerator.transformY; // align to floor level
 
@@ -92,6 +100,7 @@ public class RoomSpawner : MonoBehaviour
 
             // Add to dungeon cleanup list so it gets destroyed on floor change
             dungeonGenerator.objectsToCleanDungeon.Add(doorGO);
+            spawned++;
         }
     }
 
@@ -101,41 +110,113 @@ public class RoomSpawner : MonoBehaviour
 
     private void SpawnRoomTriggers()
     {
-        // Group the dungeon's floor objects into rooms by proximity
-        // Each cluster of tiles that are close together is one room
+        // PERFORMANCE: clustering by distance over thousands of tiles can get very slow.
+        // Use a grid + flood-fill (connected components) in tile space.
         List<GameObject> allObjects = dungeonGenerator.objectsToCleanDungeon;
-        List<Vector3> floorPositions = new List<Vector3>();
+        if (allObjects == null || allObjects.Count == 0) return;
 
-        // Collect floor tile positions ù they sit at transformY
         float floorY = dungeonGenerator.transformY;
+        int tile = Mathf.Max(1, dungeonGenerator.sizeOfInt);
+
+        HashSet<Vector2Int> tiles = new HashSet<Vector2Int>();
         foreach (GameObject go in allObjects)
         {
             if (go == null) continue;
-            // Floor tiles are at exactly transformY
-            // Walls and props are offset ù filter by Y tolerance
-            if (Mathf.Abs(go.transform.position.y - floorY) < 0.5f)
-                floorPositions.Add(go.transform.position);
+            Vector3 p = go.transform.position;
+            if (Mathf.Abs(p.y - floorY) >= 0.5f) continue;
+
+            int gx = Mathf.RoundToInt(p.x / tile);
+            int gz = Mathf.RoundToInt(p.z / tile);
+            tiles.Add(new Vector2Int(gx, gz));
         }
 
-        if (floorPositions.Count == 0) return;
+        if (tiles.Count == 0) return;
 
-        // Cluster floor tiles into rooms using a simple
-        // distance-based grouping ù tiles within sizeOfInt*2
-        // of each other belong to the same room
-        float clusterRadius = dungeonGenerator.sizeOfInt * 2.5f;
-        List<List<Vector3>> clusters = ClusterPositions(floorPositions, clusterRadius);
-
+        List<List<Vector3>> clusters = FloodFillClusters(tiles, tile, floorY);
         Debug.Log($"[RoomSpawner] Found {clusters.Count} room clusters.");
+
+        // Choose exactly one start room: the cluster whose centre is closest to origin.
+        int startClusterIndex = -1;
+        float bestStart = float.PositiveInfinity;
+        for (int i = 0; i < clusters.Count; i++)
+        {
+            var cluster = clusters[i];
+            if (cluster == null || cluster.Count < 6) continue;
+            Vector3 c = GetClusterCentre(cluster);
+            float d = c.sqrMagnitude;
+            if (d < bestStart)
+            {
+                bestStart = d;
+                startClusterIndex = i;
+            }
+        }
 
         foreach (List<Vector3> cluster in clusters)
         {
-            if (cluster.Count < 4) continue; // skip tiny clusters (corridor tiles)
-
-            CreateRoomFromCluster(cluster);
+            if (cluster.Count < 6) continue; // skip tiny clusters (usually corridors)
+            bool isStart = (startClusterIndex >= 0 && clusters[startClusterIndex] == cluster);
+            CreateRoomFromCluster(cluster, isStart);
         }
     }
 
-    private void CreateRoomFromCluster(List<Vector3> floorTiles)
+    private Vector3 GetClusterCentre(List<Vector3> floorTiles)
+    {
+        Vector3 min = floorTiles[0];
+        Vector3 max = floorTiles[0];
+        for (int i = 1; i < floorTiles.Count; i++)
+        {
+            Vector3 pos = floorTiles[i];
+            min = Vector3.Min(min, pos);
+            max = Vector3.Max(max, pos);
+        }
+        return (min + max) / 2f;
+    }
+
+    private List<List<Vector3>> FloodFillClusters(HashSet<Vector2Int> tiles, int tileSize, float floorY)
+    {
+        List<List<Vector3>> clusters = new List<List<Vector3>>();
+        Queue<Vector2Int> q = new Queue<Vector2Int>();
+        HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
+
+        foreach (var start in tiles)
+        {
+            if (visited.Contains(start)) continue;
+
+            List<Vector3> cluster = new List<Vector3>();
+            visited.Add(start);
+            q.Enqueue(start);
+
+            while (q.Count > 0)
+            {
+                var c = q.Dequeue();
+                cluster.Add(new Vector3(c.x * tileSize, floorY, c.y * tileSize));
+
+                var n1 = new Vector2Int(c.x + 1, c.y);
+                var n2 = new Vector2Int(c.x - 1, c.y);
+                var n3 = new Vector2Int(c.x, c.y + 1);
+                var n4 = new Vector2Int(c.x, c.y - 1);
+
+                TryVisit(n1);
+                TryVisit(n2);
+                TryVisit(n3);
+                TryVisit(n4);
+            }
+
+            clusters.Add(cluster);
+        }
+
+        return clusters;
+
+        void TryVisit(Vector2Int n)
+        {
+            if (visited.Contains(n)) return;
+            if (!tiles.Contains(n)) return;
+            visited.Add(n);
+            q.Enqueue(n);
+        }
+    }
+
+    private void CreateRoomFromCluster(List<Vector3> floorTiles, bool isStartRoom)
     {
         // Find the bounds of this cluster
         Vector3 min = floorTiles[0];
@@ -169,11 +250,8 @@ public class RoomSpawner : MonoBehaviour
         RoomTrigger roomTrigger = triggerGO.AddComponent<RoomTrigger>();
         roomTrigger.room = room;
 
-        // Spawn enemies inside this room if it's not the start room
-        // Start room = closest cluster to world origin
-        bool isStartRoom = centre.magnitude < dungeonGenerator.sizeOfInt * 3f;
         room.Initialise(centre, isStartRoom);
-        if (!isStartRoom && enemyPrefabs.Length > 0)
+        if (!isStartRoom)
             SpawnEnemiesInRoom(room, centre, size);
 
         activeRooms.Add(room);
